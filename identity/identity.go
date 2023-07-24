@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"crypto/hmac"
@@ -32,7 +33,7 @@ type Identity struct {
 	Signature string `json:"sign"`
 }
 
-const SECRET = "MAIS UM MALDITO VAZAMENTO DE SECRET DE JWT"
+var SECRET string
 
 func (i *Identity) Check() bool {
 	text := fmt.Sprintf("%s %s %d salzinho", i.Name, i.Id, i.Powers)
@@ -96,4 +97,12 @@ func New() Identity {
 	}
 	i.Sign()
 	return i
+}
+
+func init() {
+	SECRET = os.Getenv("RWT_SECRET")
+	if SECRET == "" {
+		SECRET = "POR FAVOR FALSIFIQUEM MEUS TOKENS"
+		log.Println(SECRET)
+	}
 }

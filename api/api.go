@@ -44,6 +44,9 @@ func whoami(c echo.Context) *identity.Identity {
 	if err != nil {
 		return newIdentity(c)
 	}
+	if !i.Check() {
+		return newIdentity(c)
+	}
 	return i
 }
 
@@ -87,8 +90,6 @@ func Start() {
 		if page < 0 {
 			page = 0
 		}
-
-		log.Println("viewing page ", page)
 
 		var nextPage int64
 		var prevPage int64
