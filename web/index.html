@@ -28,12 +28,8 @@
                     <div class="badge bg-light text-dark">{{ $topic.Creator }}</div>
                     <div class="badge bg-light text-dark">{{ $topic.ReplyCount }}</div>
                     <br/>
-                    <a href="/{{ $topic.Id }}">
-                        {{ $topic.Subject }}
-                    </a>
-                    <p>
-                        {{ $topic.Content }}
-                    </p>    
+                    <a href="/{{ $topic.Id }}">{{ $topic.Subject }}</a>
+                    <p style="white-space: pre-line;">{{ $topic.Content }}</p>
                 </div>
             </div>
         {{ end }}
