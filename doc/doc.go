@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -16,6 +17,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+var DOCDB_PATH string
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -197,7 +200,7 @@ func Rollback(group ...*DocDB) {
 }
 
 func Create(file string) *DocDB {
-	conn := sqlite.Open(file)
+	conn := sqlite.Open(DOCDB_PATH + file)
 
 	result := DocDB{
 		Type: TYPE_COLLECTION,
@@ -229,7 +232,7 @@ func (d *DocDB) UsingIndexable(i Indexable) {
 }
 
 func CreateIndex(file string) *DocDB {
-	conn := sqlite.Open(file)
+	conn := sqlite.Open(DOCDB_PATH + file)
 	result := DocDB{
 		Type: TYPE_INDEX,
 	}
@@ -246,4 +249,10 @@ func CreateIndex(file string) *DocDB {
 	}
 	result.conn.AutoMigrate(&Doc{})
 	return &result
+}
+
+func init() {
+	DOCDB_PATH = os.Getenv("DOCDB_PATH")
+	log.Println("initializing docdb, path = ", DOCDB_PATH)
+
 }
