@@ -7,7 +7,7 @@ import (
 	"plantinha.org/m/v2/forum"
 )
 
-func ViewThread(c echo.Context) error {
+func ViewTopic(c echo.Context) error {
 	identity := whoami(c)
 	page, _ := strconv.ParseInt(c.QueryParam("p"), 32, 10)
 	if page < 0 {
