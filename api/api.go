@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -47,19 +48,20 @@ func whoami(c echo.Context) *identity.Identity {
 }
 
 func Start() {
-	log.Println("starting hilos...")
-
 	e := echo.New()
 
-	t := &Template{
-		templates: template.Must(template.ParseGlob("web/*.html")),
-	}
+	//  ainda não sei como fazer isso funcionar, mas supostamente é pra acelerar um pouco
+	//  a geração das páginas. TODO: fazer isso.
+	//	t := &Template{
+	//		templates: template.Must(template.ParseGlob("web/*.html")),
+	//	}
 
-	e.Renderer = t
-	// index
+	//	e.Renderer = t
+
+	// The Index
 	e.GET("/", func(c echo.Context) error {
-		topicList := forum.GetTopics(0, 100)
 		identity := whoami(c)
+		topicList := forum.GetTopics(0, 100)
 		return c.HTML(200,
 			RenderTemplate(
 				"index",
@@ -70,12 +72,13 @@ func Start() {
 		)
 	})
 
+	// View a thread/topic/post whatever
 	e.GET("/:topic_id", func(c echo.Context) error {
+		identity := whoami(c)
 		topic, err := forum.ReadTopic(c.Param("topic_id"))
 		if err != nil {
 			return c.HTML(400, err.Error())
 		}
-		identity := whoami(c)
 		return c.HTML(200, RenderTemplate(
 			"thread",
 			R{"Topic": topic,
@@ -86,11 +89,11 @@ func Start() {
 
 	// view all posts by a user
 	e.GET("/by/:user_id", func(c echo.Context) error {
+		identity := whoami(c)
 		topicList, err := forum.ReadUserPosts(c.Param("user_id"))
 		if err != nil {
 			return c.String(400, err.Error())
 		}
-		identity := whoami(c)
 		return c.HTML(200, RenderTemplate(
 			"index",
 			R{"Topics": topicList,
@@ -98,7 +101,7 @@ func Start() {
 			},
 		))
 	})
-	// return an identity
+	// creates a new identity
 	e.GET("/newidentity.exe", func(c echo.Context) error {
 		i := identity.New()
 		encoded, err := i.EncodeBase64()
@@ -113,19 +116,16 @@ func Start() {
 			"rwt": encoded,
 		})
 	})
+	// reuse an identity
+	/*
+		e.POST("fakepassport.exe", func(c echo.Context) error{
+			// TODO: validar o corpo da requisição e retornar um cookie.
+		})
+	*/
 
 	e.GET("/whoami.exe", func(c echo.Context) error {
 		user := whoami(c)
-		if user == nil {
-			newIdentity := identity.New()
-			user = &newIdentity
-			if encoded, err := user.EncodeBase64(); err != nil {
-				log.Println(err)
-			} else {
-				c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded})
-			}
-		}
-		return c.JSON(http.StatusOK, user)
+		return c.String(http.StatusOK, fmt.Sprint(user.Id, user.Name))
 	})
 
 	api := e.Group("visualbasic.exe")
@@ -136,7 +136,6 @@ func Start() {
 		if err != nil {
 			return c.HTML(400, "wtf")
 		}
-
 		return c.JSON(http.StatusOK, forum.GetTopics(int(page), 10))
 	})
 
@@ -153,8 +152,7 @@ func Start() {
 
 	// create a topic
 	// TODO: use identity to identify the identity identification bearer
-	// only tokens with OMNIPOTENCE BIT can create topics.
-
+	// only tokens with OMNIPOTENCE BIT (0d95) can create topics.
 	api.POST("/", func(c echo.Context) error {
 		nova_conversa := forum.Post{}
 
@@ -173,20 +171,68 @@ func Start() {
 	api.GET("/post/:topic_id", func(c echo.Context) error {
 		topic_id := c.Param("topic_id")
 
-		resultado := forum.ReadPost(topic_id)
+		resultado, err := forum.ReadPost(topic_id)
+		if err != nil {
+			return c.String(http.StatusBadRequest, err.Error())
+		}
 
 		return c.JSON(http.StatusOK, resultado)
 	})
 
+	api.PUT("/post/:post_id", func(c echo.Context) error {
+		type Alteration struct {
+			Subject string `json:"subject" form:"subject"`
+			Content string `json:"content" form:"content"`
+		}
+
+		post_id := c.Param("post_id")
+		identity := whoami(c)
+
+		changes := Alteration{}
+
+		if err := c.Bind(&changes); err != nil {
+			log.Println(err)
+			return c.String(http.StatusBadRequest, "ya dun guf'd")
+		}
+
+		// TODO: limit this to people que tem plenos poderes sobre o forum (poderes 0d95) ou que
+		// ainda tem créditos.
+		// no momento qualquer pessoa pode editar qualquer post de qualquer outra pessoa.
+
+		original, err := forum.ReadPost(post_id)
+		if err != nil {
+			return c.String(http.StatusBadRequest, "no post "+post_id)
+		}
+
+		log.Printf("%s editing %s's post", identity.Name, original.Creator)
+
+		original.Subject = changes.Subject
+		original.Content = changes.Content
+
+		if err := forum.RewritePost(post_id, original); err != nil {
+			return c.String(http.StatusInternalServerError, "the forum dun gufd")
+		}
+
+		return c.HTML(http.StatusAccepted, RenderTemplate(
+			"newpost", R{
+				"Id":        original.Id,
+				"Subject":   original.Subject,
+				"Creator":   original.Creator,
+				"CreatorId": original.CreatorId,
+				"Content":   original.Content,
+			},
+		))
+	})
+
 	// reply a thread
-	// TODO: use identity to identify the identity identification bearer
 	api.POST("/post/:topic_id", func(c echo.Context) error {
+		topic_id := c.Param("topic_id")
+		identity := whoami(c)
+
 		post := forum.Post{}
 		if err := c.Bind(&post); err != nil {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
-		topic_id := c.Param("topic_id")
-		identity := whoami(c)
 
 		post.CreatorId = identity.Id
 		post.Creator = identity.Name
@@ -196,7 +242,7 @@ func Start() {
 			log.Println("couldn't reply to topic ", topic_id, ":", err)
 			return c.String(http.StatusBadRequest, "could not record the message")
 		}
-		return c.String(http.StatusAccepted, RenderTemplate(
+		return c.HTML(http.StatusAccepted, RenderTemplate(
 			"newpost", R{
 				"Id":        id,
 				"Subject":   post.Subject,
@@ -207,5 +253,7 @@ func Start() {
 		))
 	})
 
-	e.Start(":3000")
+	if err := e.Start(":3000"); err != nil {
+		panic(err)
+	}
 }

@@ -163,8 +163,23 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 	return reply.Id, nil
 }
 
-func ReadPost(topicId string) Post {
+func ReadPost(topicId string) (*Post, error) {
 	resultado := Post{}
-	posts.Get(topicId, &resultado)
-	return resultado
+	if err := posts.Get(topicId, &resultado); err != nil {
+		return nil, errors.New("could not read post " + topicId)
+	}
+	return &resultado, nil
+}
+
+// não pode trocar o autor e o parent_id porque
+// teria que reindexar e eu não quero fazer isso.
+// idealmente é pra deixar poder fazer, mas não vai não por enquanto.
+
+func RewritePost(id string, rewrite *Post) error {
+
+	if err := posts.Save(id, rewrite); err != nil {
+		log.Println("error editing post: ", err)
+		return err
+	}
+	return nil
 }
