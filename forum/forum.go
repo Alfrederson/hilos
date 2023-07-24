@@ -176,7 +176,6 @@ func ReadPost(topicId string) (*Post, error) {
 // idealmente é pra deixar poder fazer, mas não vai não por enquanto.
 
 func RewritePost(id string, rewrite *Post) error {
-
 	if err := posts.Save(id, rewrite); err != nil {
 		log.Println("error editing post: ", err)
 		return err

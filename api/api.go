@@ -158,8 +158,12 @@ func Start() {
 	// TODO: use identity to identify the identity identification bearer
 	// only tokens with OMNIPOTENCE BIT (0d95) can create topics.
 	api.POST("/", func(c echo.Context) error {
-		nova_conversa := forum.Post{}
+		identity := whoami(c)
+		if identity.Powers != 95 {
+			return e404(c)
+		}
 
+		nova_conversa := forum.Post{}
 		if err := c.Bind(&nova_conversa); err != nil {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
@@ -191,6 +195,9 @@ func Start() {
 
 		post_id := c.Param("post_id")
 		identity := whoami(c)
+		if identity.Powers != 95 {
+			return e404(c)
+		}
 
 		changes := Alteration{}
 
