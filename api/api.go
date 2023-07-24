@@ -77,9 +77,7 @@ func Start() {
 	e.GET("/favicon.ico", e404)
 	e.GET("/robots.txt", func(c echo.Context) error {
 		log.Println("🕷️ ", c.RealIP())
-		return c.String(200, `
-			User-agent: *
-			Disallow:`)
+		return c.String(200, "User-agent: *\nDisallow:")
 	})
 
 	// View a thread/topic/post whatever
