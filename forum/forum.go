@@ -16,6 +16,10 @@ type Entry struct {
 	Id string
 }
 
+const (
+	TOPIC_PAGE_COUNT = 10
+)
+
 // Path é o caminho do post.
 // Creator é a identidade do criador.
 type Post struct {
@@ -60,12 +64,12 @@ func (p *Post) RemoveFromIndex() {
 }
 
 func Start() {
-	posts = doc.Create("posts.db")
+	posts = doc.Create("data/posts.db")
 
 	posts.UsingIndexable(&Post{})
 
-	posts_by_parent = doc.CreateIndex("posts.parent_id.db")
-	posts_by_creator = doc.CreateIndex("posts.creator_id.db")
+	posts_by_parent = doc.CreateIndex("data/posts.parent_id.db")
+	posts_by_creator = doc.CreateIndex("data/posts.creator_id.db")
 
 	log.Println("forum component initialized")
 }
@@ -101,7 +105,7 @@ func CreateTopic(t Post) (string, error) {
 	return id, err
 }
 
-func ReadTopic(topic_id string) (*Post, error) {
+func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 	// pega o tópico
 	topic := Post{}
 
@@ -111,9 +115,9 @@ func ReadTopic(topic_id string) (*Post, error) {
 	}
 	topic.Id = topic_id
 
-	topic.Replies = make([]Post, 0, topic.ReplyCount)
+	topic.Replies = make([]Post, 0, TOPIC_PAGE_COUNT)
 
-	lista := posts_by_parent.List(topic_id, 0, 10)
+	lista := posts_by_parent.List(topic_id, int(fromPage)*TOPIC_PAGE_COUNT, TOPIC_PAGE_COUNT)
 
 	for _, reply_id := range lista {
 		mensagem := Post{}
