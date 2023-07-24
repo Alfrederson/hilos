@@ -249,6 +249,14 @@ func Start() {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
 
+		length := len(post.Content)
+		if length < 3 {
+			return c.String(http.StatusBadRequest, "content too short, sir")
+		}
+		if length > 512 {
+			return c.String(http.StatusBadRequest, "content too long, sir")
+		}
+
 		post.CreatorId = identity.Id
 		post.Creator = identity.Name
 
