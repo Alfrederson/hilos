@@ -57,6 +57,9 @@ func Start() {
 	//	}
 
 	//	e.Renderer = t
+	e404 := func(c echo.Context) error {
+		return c.String(404, "not found")
+	}
 
 	// The Index
 	e.GET("/", func(c echo.Context) error {
@@ -71,6 +74,7 @@ func Start() {
 			),
 		)
 	})
+	e.GET("/favicon.ico", e404)
 
 	// View a thread/topic/post whatever
 	e.GET("/:topic_id", func(c echo.Context) error {

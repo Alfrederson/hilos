@@ -60,12 +60,12 @@ func (p *Post) RemoveFromIndex() {
 }
 
 func Start() {
-	posts = doc.Create("data/posts.db")
+	posts = doc.Create("posts.db")
 
 	posts.UsingIndexable(&Post{})
 
-	posts_by_parent = doc.CreateIndex("data/posts.parent_id.db")
-	posts_by_creator = doc.CreateIndex("data/posts.creator_id.db")
+	posts_by_parent = doc.CreateIndex("posts.parent_id.db")
+	posts_by_creator = doc.CreateIndex("posts.creator_id.db")
 
 	log.Println("forum component initialized")
 }
