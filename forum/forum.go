@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"plantinha.org/m/v2/doc"
+	"hilos/doc"
 )
 
 var posts *doc.DocDB

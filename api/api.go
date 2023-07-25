@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"plantinha.org/m/v2/forum"
-	"plantinha.org/m/v2/identity"
+	"hilos/forum"
+	"hilos/identity"
 
 	"github.com/labstack/echo/v4"
 )
@@ -83,15 +83,27 @@ func Start() {
 		i := identity.New()
 		encoded, err := i.EncodeBase64()
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, R{
-				"err": "could not encode identity as base64",
-			})
+			return c.String(http.StatusInternalServerError, "could not send your new id")
 		}
 		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded})
+		return c.String(http.StatusOK, encoded)
+	})
 
-		return c.JSON(http.StatusOK, R{
-			"rwt": encoded,
-		})
+	e.GET("fakepassport.exe/:passport", func(c echo.Context) error {
+		i, err := identity.DecodeBase64(c.Param("passport"))
+		if err != nil {
+			log.Println("fake passport: ", err)
+			return c.String(http.StatusPaymentRequired, "need to pay bribe for fake passport. its very fake.")
+		}
+		if !i.Check() {
+			return c.String(http.StatusConflict, "sorry sir this isn't accepted")
+		}
+		encoded, err := i.EncodeBase64()
+		if err != nil {
+			return c.String(http.StatusConflict, "could not encode fake passport")
+		}
+		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded, Path: "/"})
+		return c.String(http.StatusOK, fmt.Sprintf("you are now %s %s with powers %d", i.Id, i.Name, i.Powers))
 	})
 	// reuse an identity
 	/*

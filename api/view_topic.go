@@ -3,8 +3,9 @@ package api
 import (
 	"strconv"
 
+	"hilos/forum"
+
 	"github.com/labstack/echo/v4"
-	"plantinha.org/m/v2/forum"
 )
 
 func ViewTopic(c echo.Context) error {

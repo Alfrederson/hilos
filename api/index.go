@@ -1,8 +1,9 @@
 package api
 
 import (
+	"hilos/forum"
+
 	"github.com/labstack/echo/v4"
-	"plantinha.org/m/v2/forum"
 )
 
 func Index(c echo.Context) error {

@@ -15,7 +15,7 @@ import (
 
 	"encoding/json"
 
-	"plantinha.org/m/v2/doc"
+	"hilos/doc"
 )
 
 func sign(message, secret string) string {
@@ -97,6 +97,11 @@ func New() Identity {
 	}
 	i.Sign()
 	return i
+}
+
+func SetSecret(s string) {
+	SECRET = s
+	log.Println("changing secret")
 }
 
 func init() {

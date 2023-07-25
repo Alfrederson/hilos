@@ -7,3 +7,4 @@ data/*
 *.db-shm
 m.exe
 .env
+fakeid

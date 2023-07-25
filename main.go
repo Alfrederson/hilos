@@ -7,8 +7,8 @@ package main
 import (
 	"os"
 
-	"plantinha.org/m/v2/api"
-	"plantinha.org/m/v2/forum"
+	"hilos/api"
+	"hilos/forum"
 )
 
 func main() {
