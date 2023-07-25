@@ -1,0 +1,4 @@
+{{ if .LastPost }}
+last : {{ .LastPost.Creator }} : 
+<a href="/{{ .LastPost.Id }}">{{ crop .LastPost.Content }}</a>
+{{ end }}

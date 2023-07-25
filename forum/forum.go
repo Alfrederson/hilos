@@ -33,6 +33,9 @@ type Post struct {
 	Replies    []Post `json:"replies,omitempty"`
 }
 
+// global exportada e estou 300% nem aí.
+var LastPost *Post
+
 func (p *Post) ReadField(field string) (string, error) {
 	switch field {
 	case "parent_id":
@@ -45,7 +48,6 @@ func (p *Post) ReadField(field string) (string, error) {
 }
 
 func (p *Post) WriteToIndex() {
-	log.Println("Indexing post ", p.Id)
 	// parent id
 	err := posts_by_parent.Add(p.ParentId, p.Id)
 	if err != nil {
@@ -163,6 +165,10 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 	if err := posts.Save(topic_id, conversa); err != nil {
 		log.Println("error incrementing reply count:", err)
 	}
+
+	LastPost = &reply
+
+	log.Printf("%s replied to %s\n", reply.Creator, reply.ParentId)
 
 	return reply.Id, nil
 }

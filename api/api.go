@@ -82,6 +82,9 @@ func Start() {
 	// View a thread/topic/post whatever
 	e.GET("/:topic_id", ViewTopic)
 
+	// View the last post
+	e.GET("/new", ViewLastPost)
+
 	// view all posts by a user
 	e.GET("/by/:user_id", ViewByUserId)
 

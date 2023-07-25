@@ -12,8 +12,10 @@ func Index(c echo.Context) error {
 	return c.HTML(200,
 		RenderTemplate(
 			"index",
-			R{"Topics": topicList,
+			R{
 				"Identity": identity,
+				"LastPost": forum.LastPost,
+				"Topics":   topicList,
 			},
 		),
 	)
