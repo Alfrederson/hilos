@@ -64,12 +64,19 @@ func Start() {
 		return c.String(404, "not found")
 	}
 
+	ç := func(c echo.Context) error {
+		return c.String(200, "🤡 "+c.RealIP())
+	}
+
 	// The Index
 	e.GET("/favicon.ico", e404)
 	e.GET("/robots.txt", func(c echo.Context) error {
 		log.Println("🕷️ ", c.RealIP())
 		return c.String(200, "User-agent: *\nDisallow:")
 	})
+	e.GET("/admin.php", ç)
+	e.GET("/wp-admin/", ç)
+	e.GET("/.env", ç)
 
 	e.GET("/", Index)
 	// View a thread/topic/post whatever
@@ -105,12 +112,6 @@ func Start() {
 		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded, Path: "/"})
 		return c.String(http.StatusOK, fmt.Sprintf("you are now %s %s with powers %d", i.Id, i.Name, i.Powers))
 	})
-	// reuse an identity
-	/*
-		e.POST("fakepassport.exe", func(c echo.Context) error{
-			// TODO: validar o corpo da requisição e retornar um cookie.
-		})
-	*/
 
 	e.GET("/whoami.exe", func(c echo.Context) error {
 		user := whoami(c)
@@ -134,9 +135,7 @@ func Start() {
 		if page < 0 {
 			page = 0
 		}
-
 		topic, err := forum.ReadTopic(c.Param("topic_id"), page)
-
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, R{
 				"err": "could not read that topic",
@@ -146,8 +145,6 @@ func Start() {
 	})
 
 	// create a topic
-	// TODO: use identity to identify the identity identification bearer
-	// only tokens with OMNIPOTENCE BIT (0d95) can create topics.
 	api.POST("/", func(c echo.Context) error {
 		identity := whoami(c)
 		if identity.Powers != 95 {
@@ -183,15 +180,12 @@ func Start() {
 			Subject string `json:"subject" form:"subject"`
 			Content string `json:"content" form:"content"`
 		}
-
 		post_id := c.Param("post_id")
 		identity := whoami(c)
 		if identity.Powers != 95 {
 			return e404(c)
 		}
-
 		changes := Alteration{}
-
 		if err := c.Bind(&changes); err != nil {
 			log.Println(err)
 			return c.String(http.StatusBadRequest, "ya dun guf'd")
@@ -205,9 +199,11 @@ func Start() {
 		if err != nil {
 			return c.String(http.StatusBadRequest, "no post "+post_id)
 		}
+		if (original.CreatorId != identity.Id) && (identity.Powers != 95) {
+			return c.String(http.StatusForbidden, "ya dun gufd")
+		}
 
 		log.Printf("%s editing %s's post", identity.Name, original.Creator)
-
 		original.Subject = changes.Subject
 		original.Content = changes.Content
 

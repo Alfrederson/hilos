@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -152,7 +151,6 @@ func (db *DocDB) Delete(path string) {
 func (db *DocDB) List(path string, from int, limit int) []string {
 	if db.Type == TYPE_INDEX {
 		type Doc struct {
-			Path string
 			Data string
 		}
 		docs := make([]Doc, 0, 10)
@@ -252,7 +250,7 @@ func CreateIndex(file string) *DocDB {
 }
 
 func init() {
-	DOCDB_PATH = os.Getenv("DOCDB_PATH")
+	DOCDB_PATH = "data" // os.Getenv("DOCDB_PATH")
 	log.Println("initializing docdb, path = ", DOCDB_PATH)
 
 }
