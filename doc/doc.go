@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -249,7 +250,7 @@ func CreateIndex(file string) *DocDB {
 }
 
 func init() {
-	DOCDB_PATH = "data" // os.Getenv("DOCDB_PATH")
+	DOCDB_PATH = os.Getenv("DOCDB_PATH")
 	log.Println("initializing docdb, path = ", DOCDB_PATH)
 
 }

@@ -60,7 +60,7 @@ func Start() {
 			if !status.somethingChanged {
 				log.Println("⏲️")
 				time.Sleep(time.Second * 240)
-				return
+				continue
 			}
 			time.Sleep(time.Second * 15)
 			db.status.Save("lastPosts", &status.LastPosts)
