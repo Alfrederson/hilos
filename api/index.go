@@ -8,7 +8,9 @@ import (
 
 func Index(c echo.Context) error {
 	identity := whoami(c)
-	topicList := forum.GetTopics(0, 100)
+	page := requestedPage(c)
+	topicList := forum.GetTopics(int(page), 10)
+
 	return c.HTML(200,
 		RenderTemplate(
 			"index",

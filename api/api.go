@@ -24,30 +24,12 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-func newIdentity(c echo.Context) *identity.Identity {
-	i := identity.New()
-	encoded, err := i.EncodeBase64()
-	if err != nil {
-		log.Println("cow went to the swamp")
-	} else {
-		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded, Path: "/"})
-	}
-	return &i
+type WebConfig struct {
+	Prefix string
 }
 
-func whoami(c echo.Context) *identity.Identity {
-	rwt, err := c.Cookie("rwt")
-	if err != nil {
-		return newIdentity(c)
-	}
-	i, err := identity.DecodeBase64(rwt.Value)
-	if err != nil {
-		return newIdentity(c)
-	}
-	if !i.Check() {
-		return newIdentity(c)
-	}
-	return i
+var web = WebConfig{
+	Prefix: "thread.docx",
 }
 
 func Start() {
@@ -65,7 +47,8 @@ func Start() {
 	}
 
 	ç := func(c echo.Context) error {
-		return c.String(200, "🤡 "+c.RealIP())
+		log.Println(c.RealIP(), " looking for ", c.Request().RequestURI)
+		return c.String(200, "🤡")
 	}
 
 	// The Index

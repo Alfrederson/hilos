@@ -134,7 +134,6 @@ func (db *DocDB) Get(path string, object interface{}) error {
 		Path: path,
 	})
 	if result.Path == "" {
-		log.Println(db.conn.Error)
 		return errors.New("document no found: " + path)
 	}
 	json.Unmarshal(result.Data, object)

@@ -23,6 +23,7 @@ func readFile(filename string) string {
 	return string(text)
 }
 
+// O certo é não fazer isso, hehe.
 func RenderTemplate(templateName string, data R) string {
 	tmpl, err :=
 		template.

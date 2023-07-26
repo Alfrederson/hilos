@@ -1,8 +1,6 @@
 package api
 
 import (
-	"strconv"
-
 	"hilos/forum"
 
 	"github.com/labstack/echo/v4"
@@ -10,17 +8,9 @@ import (
 
 func ViewTopic(c echo.Context) error {
 	identity := whoami(c)
-	page, _ := strconv.ParseInt(c.QueryParam("p"), 32, 10)
-	if page < 0 {
-		page = 0
-	}
-
 	var nextPage int64
 	var prevPage int64
-
-	if page > 0 {
-		prevPage = page - 1
-	}
+	page := requestedPage(c)
 
 	topic, err := forum.ReadTopic(c.Param("topic_id"), page)
 	if err != nil {
