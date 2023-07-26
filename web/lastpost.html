@@ -1,4 +1,3 @@
-{{ if .LastPost }}
-last : {{ .LastPost.Creator }} : 
-<a href="/{{ .LastPost.Id }}">{{ crop .LastPost.Content }}</a>
+{{ range $index, $post := .LastPosts }}
+<a href="/{{ $post.Id }}">{{ crop $post.Content }}</a> -
 {{ end }}

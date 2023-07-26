@@ -13,9 +13,9 @@ func Index(c echo.Context) error {
 		RenderTemplate(
 			"index",
 			R{
-				"Identity": identity,
-				"LastPost": forum.LastPost,
-				"Topics":   topicList,
+				"Identity":  identity,
+				"LastPosts": forum.Status().LastPosts,
+				"Topics":    topicList,
 			},
 		),
 	)

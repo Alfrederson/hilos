@@ -3,14 +3,10 @@ package forum
 import (
 	"errors"
 	"log"
+	"time"
 
 	"hilos/doc"
 )
-
-var posts *doc.DocDB
-
-var posts_by_parent *doc.DocDB
-var posts_by_creator *doc.DocDB
 
 type Entry struct {
 	Id string
@@ -20,69 +16,68 @@ const (
 	TOPIC_PAGE_COUNT = 10
 )
 
-// Path é o caminho do post.
-// Creator é a identidade do criador.
-type Post struct {
-	Id         string `json:"id,omitempty"`
-	ParentId   string `json:"parent_id,omitempty"`
-	Creator    string `json:"creator" form:"creator"`
-	CreatorId  string `json:"creator_id" form:"creator_id"`
-	Subject    string `json:"subject" form:"subject"`
-	Content    string `json:"content" form:"content"`
-	ReplyCount int    `json:"replies_count"`
-	Replies    []Post `json:"replies,omitempty"`
+var db struct {
+	posts            *doc.DocDB
+	posts_by_parent  *doc.DocDB
+	posts_by_creator *doc.DocDB
+
+	status *doc.DocDB
 }
 
-// global exportada e estou 300% nem aí.
-var LastPost *Post
-
-func (p *Post) ReadField(field string) (string, error) {
-	switch field {
-	case "parent_id":
-		return p.ParentId, nil
-	case "creator_id":
-		return p.CreatorId, nil
-	default:
-		return "", errors.New("invalid field " + field)
-	}
+type ForumStatus struct {
+	somethingChanged bool
+	LastPosts        []*Post
 }
 
-func (p *Post) WriteToIndex() {
-	// parent id
-	err := posts_by_parent.Add(p.ParentId, p.Id)
-	if err != nil {
-		log.Println("ERROR indexing post ", p.Id, ":", err)
-	}
-	// creator id
-	err = posts_by_creator.Add(p.CreatorId, p.Id)
-	if err != nil {
-		log.Println("ERROR indexing post by parent", p.Id, ":", err)
-	}
+var status ForumStatus
+
+func Status() *ForumStatus {
+	return &status
 }
 
-func (p *Post) RemoveFromIndex() {
-	posts_by_parent.Delete(p.ParentId)
-	posts_by_creator.Delete(p.CreatorId)
+func (s *ForumStatus) PubPost(p *Post) {
+	s.somethingChanged = true
+	s.LastPosts = append(s.LastPosts, p)
+	if len(s.LastPosts) > 4 {
+		s.LastPosts = s.LastPosts[1:]
+	}
 }
 
 func Start() {
-	posts = doc.Create("posts.db")
+	db.posts = doc.Create("posts.db")
 
-	posts.UsingIndexable(&Post{})
+	db.posts.UsingIndexable(&Post{})
 
-	posts_by_parent = doc.CreateIndex("posts.parent_id.db")
-	posts_by_creator = doc.CreateIndex("posts.creator_id.db")
+	db.posts_by_parent = doc.CreateIndex("posts.parent_id.db")
+	db.posts_by_creator = doc.CreateIndex("posts.creator_id.db")
+
+	db.status = doc.Create("status.db")
+
+	db.status.Get("lastPosts", &status.LastPosts)
+
+	go func() {
+		for {
+			if !status.somethingChanged {
+				log.Println("⏲️")
+				time.Sleep(time.Second * 240)
+				return
+			}
+			time.Sleep(time.Second * 15)
+			db.status.Save("lastPosts", &status.LastPosts)
+			status.somethingChanged = false
+		}
+	}()
 
 	log.Println("forum component initialized")
 }
 
 func GetTopics(page int, amount int) []Post {
-	lista := posts_by_parent.List("root", page*amount, amount)
+	lista := db.posts_by_parent.List("root", page*amount, amount)
 
 	resultado := make([]Post, 0, amount)
 	for _, id := range lista {
 		conversa := Post{}
-		posts.Get(id, &conversa)
+		db.posts.Get(id, &conversa)
 		conversa.Id = id
 		resultado = append(resultado, conversa)
 	}
@@ -93,7 +88,7 @@ func CreateTopic(t Post) (string, error) {
 	// salva
 	id := doc.New()
 
-	err := posts.Save(id, t)
+	err := db.posts.Save(id, t)
 	if err != nil {
 		return "", err
 	}
@@ -108,10 +103,9 @@ func CreateTopic(t Post) (string, error) {
 }
 
 func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
-	// pega o tópico
 	topic := Post{}
 
-	if err := posts.Get(topic_id, &topic); err != nil {
+	if err := db.posts.Get(topic_id, &topic); err != nil {
 		log.Println("error reading topic ", err)
 		return nil, errors.New("error reading topic. database dead or topic doesn't exist.")
 	}
@@ -119,11 +113,11 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 
 	topic.Replies = make([]Post, 0, TOPIC_PAGE_COUNT)
 
-	lista := posts_by_parent.List(topic_id, int(fromPage)*TOPIC_PAGE_COUNT, TOPIC_PAGE_COUNT)
+	lista := db.posts_by_parent.List(topic_id, int(fromPage)*TOPIC_PAGE_COUNT, TOPIC_PAGE_COUNT)
 
 	for _, reply_id := range lista {
 		mensagem := Post{}
-		posts.Get(reply_id, &mensagem)
+		db.posts.Get(reply_id, &mensagem)
 		mensagem.Id = reply_id
 		topic.Replies = append(topic.Replies, mensagem)
 	}
@@ -132,11 +126,11 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 }
 
 func ReadUserPosts(userId string) ([]Post, error) {
-	lista := posts_by_creator.List(userId, 0, 100)
+	lista := db.posts_by_creator.List(userId, 0, 100)
 	resultado := make([]Post, 0, 100)
 	for _, id := range lista {
 		mensagem := Post{}
-		posts.Get(id, &mensagem)
+		db.posts.Get(id, &mensagem)
 		mensagem.Id = id
 		resultado = append(resultado, mensagem)
 	}
@@ -146,14 +140,14 @@ func ReadUserPosts(userId string) ([]Post, error) {
 func ReplyTopic(topic_id string, reply Post) (string, error) {
 	// vê se o tópico existe
 	conversa := Post{}
-	if err := posts.Get(topic_id, &conversa); err != nil {
+	if err := db.posts.Get(topic_id, &conversa); err != nil {
 		return "", errors.New("no such topic")
 	}
 
 	reply.Id = doc.New()
 	reply.ParentId = topic_id
 
-	err := posts.Save(reply.Id, reply)
+	err := db.posts.Save(reply.Id, reply)
 	go reply.WriteToIndex()
 
 	if err != nil {
@@ -162,11 +156,11 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 	}
 
 	conversa.ReplyCount += 1
-	if err := posts.Save(topic_id, conversa); err != nil {
+	if err := db.posts.Save(topic_id, conversa); err != nil {
 		log.Println("error incrementing reply count:", err)
 	}
 
-	LastPost = &reply
+	status.PubPost(&reply)
 
 	log.Printf("%s replied to %s\n", reply.Creator, reply.ParentId)
 
@@ -175,7 +169,7 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 
 func ReadPost(topicId string) (*Post, error) {
 	resultado := Post{}
-	if err := posts.Get(topicId, &resultado); err != nil {
+	if err := db.posts.Get(topicId, &resultado); err != nil {
 		return nil, errors.New("could not read post " + topicId)
 	}
 	return &resultado, nil
@@ -186,7 +180,7 @@ func ReadPost(topicId string) (*Post, error) {
 // idealmente é pra deixar poder fazer, mas não vai não por enquanto.
 
 func RewritePost(id string, rewrite *Post) error {
-	if err := posts.Save(id, rewrite); err != nil {
+	if err := db.posts.Save(id, rewrite); err != nil {
 		log.Println("error editing post: ", err)
 		return err
 	}

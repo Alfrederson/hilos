@@ -7,9 +7,9 @@ import (
 )
 
 func ViewLastPost(c echo.Context) error {
-	if forum.LastPost == nil {
+	if len(forum.Status().LastPosts) == 0 {
 		return c.NoContent(200)
 	}
 
-	return c.HTML(200, RenderTemplate("lastpost", R{"LastPost": forum.LastPost}))
+	return c.HTML(200, RenderTemplate("lastpost", R{"LastPosts": forum.Status().LastPosts}))
 }

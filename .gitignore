@@ -6,5 +6,6 @@ data/*
 *.db-wal
 *.db-shm
 m.exe
+*.exe
 .env
 fakeid

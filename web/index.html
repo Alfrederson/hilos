@@ -7,7 +7,27 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
     <title>🧵</title>
-  </head>
+    <style>
+            .ticker::-webkit-scrollbar {
+                width: 4px;
+                height: 4px;
+            }
+
+            .ticker::-webkit-scrollbar-track {
+                background: #f1f1f1; 
+            }
+            
+            /* Handle */
+            .ticker::-webkit-scrollbar-thumb {
+                background: #bbb; 
+            }
+
+            /* Handle on hover */
+            .ticker::-webkit-scrollbar-thumb:hover {
+                background: #555; 
+            }
+    </style>
+</head>
 <body>
     <nav class="navbar navbar-light bg-light mb-3 sticky-top">
         <div class="container-fluid">
@@ -23,10 +43,9 @@
 
     <div class="container">
         <div class="card mb-3">
-            <div class="card-header pb-0" hx-get="/new" hx-trigger="load delay:5s">
-                {{ if .LastPost }}
-                    last : {{ .LastPost.Creator }} : 
-                    <a href="/{{ .LastPost.Id }}">{{ crop .LastPost.Content }}</a>
+            <div class="ticker card-header pb-0 overflow-auto text-nowrap" hx-get="/new" hx-trigger="every 2s">
+                {{ range $index, $post := .LastPosts }}
+                <a href="/{{ $post.Id }}">{{ crop $post.Content }}</a> -
                 {{ end }}
             </div>
 
