@@ -71,6 +71,9 @@ func Start() {
 	// view all posts by a user
 	e.GET("/by/:user_id", ViewByUserId)
 
+	// view a single post
+	e.GET("/post/:post_id", ViewSinglePost)
+
 	// creates a new identity
 	e.GET("/newidentity.exe", func(c echo.Context) error {
 		i := identity.New()
@@ -161,6 +164,8 @@ func Start() {
 		return c.JSON(http.StatusOK, resultado)
 	})
 
+	api.GET("/post/:post_id/edit", FormEditPost)
+
 	// edit a post
 	api.PUT("/post/:post_id", func(c echo.Context) error {
 		type Alteration struct {
@@ -170,24 +175,23 @@ func Start() {
 		post_id := c.Param("post_id")
 		identity := whoami(c)
 		if identity.Powers != 95 {
-			return e404(c)
+			return c.String(http.StatusForbidden, "you can't edit posts")
 		}
+
 		changes := Alteration{}
 		if err := c.Bind(&changes); err != nil {
 			log.Println(err)
 			return c.String(http.StatusBadRequest, "ya dun guf'd")
 		}
 
-		// TODO: limit this to people que tem plenos poderes sobre o forum (poderes 0d95) ou que
-		// ainda tem créditos.
-		// no momento qualquer pessoa pode editar qualquer post de qualquer outra pessoa.
-
 		original, err := forum.ReadPost(post_id)
 		if err != nil {
 			return c.String(http.StatusBadRequest, "no post "+post_id)
 		}
+		// Tirar aquele lá de cima quando eu descobrir um jeito prático de
+		// exibir os posts...
 		if (original.CreatorId != identity.Id) && (identity.Powers != 95) {
-			return c.String(http.StatusForbidden, "ya dun gufd")
+			return c.String(http.StatusForbidden, "you can't edit someone else's post")
 		}
 
 		log.Printf("%s editing %s's post", identity.Name, original.Creator)
@@ -199,53 +203,15 @@ func Start() {
 		}
 
 		return c.HTML(http.StatusAccepted, RenderTemplate(
-			"newpost", R{
-				"Id":        original.Id,
-				"Subject":   original.Subject,
-				"Creator":   original.Creator,
-				"CreatorId": original.CreatorId,
-				"Content":   original.Content,
+			"partials/post", R{
+				"Post":     original,
+				"Identity": identity,
 			},
 		))
 	})
 
 	// reply a thread
-	api.POST("/post/:topic_id", func(c echo.Context) error {
-		topic_id := c.Param("topic_id")
-		identity := whoami(c)
-
-		post := forum.Post{}
-		if err := c.Bind(&post); err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
-		}
-
-		length := len(post.Content)
-		if length < 3 {
-			return c.String(http.StatusBadRequest, "content too short, sir")
-		}
-		if length > 512 {
-			return c.String(http.StatusBadRequest, "content too long, sir")
-		}
-
-		post.CreatorId = identity.Id
-		post.Creator = identity.Name
-
-		id, err := forum.ReplyTopic(topic_id, post)
-		if err != nil {
-			log.Println("couldn't reply to topic ", topic_id, ":", err)
-			return c.String(http.StatusBadRequest, "could not record the message")
-		}
-
-		return c.HTML(200, RenderTemplate(
-			"newpost", R{
-				"Id":        id,
-				"Subject":   post.Subject,
-				"Creator":   identity.Name,
-				"CreatorId": identity.Id,
-				"Content":   post.Content,
-			},
-		))
-	})
+	api.POST("/post/:topic_id", ReplyThread)
 
 	if err := e.Start(":3000"); err != nil {
 		panic(err)

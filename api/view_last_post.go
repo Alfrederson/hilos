@@ -11,5 +11,5 @@ func ViewLastPost(c echo.Context) error {
 		return c.NoContent(200)
 	}
 
-	return c.HTML(200, RenderTemplate("lastpost", R{"LastPosts": forum.Status().LastPosts}))
+	return c.HTML(200, RenderTemplate("partials/lastpost", R{"LastPosts": forum.Status().LastPosts}))
 }

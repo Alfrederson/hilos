@@ -20,11 +20,4 @@ func ViewByUserId(c echo.Context) error {
 			"Identity":  identity,
 		},
 	)
-	/*
-		return c.HTML(200, RenderTemplate(
-			"index",
-			R{"Topics": topicList,
-				"Identity": identity,
-			},
-		))*/
 }

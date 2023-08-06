@@ -2,6 +2,8 @@ package api
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -20,6 +22,24 @@ func crop(text string) string {
 	}
 }
 
+// copiado e colado..
+func m(pairs ...any) (map[string]any, error) {
+	if len(pairs)%2 != 0 {
+		return nil, errors.New("misaligned map")
+	}
+
+	result := make(map[string]any, len(pairs)/2)
+
+	for i := 0; i < len(pairs); i += 2 {
+		key, ok := pairs[i].(string)
+		if !ok {
+			return nil, fmt.Errorf("cannot use type %T as map key", pairs[i])
+		}
+		result[key] = pairs[i+1]
+	}
+	return result, nil
+}
+
 func formatTime(t time.Time) string {
 	return t.Format("15:04:03 01-Jan-2006")
 }
@@ -32,6 +52,7 @@ func readFile(filename string) string {
 	return string(text)
 }
 
+// se tem o HTML e o nome é Pugger, claramente não deu certo usar o Pug.
 type Pugger struct {
 	engine *html.Engine
 }
@@ -41,6 +62,7 @@ func MakePugger() Pugger {
 	p.engine = html.New("./web3", ".html")
 	p.engine.Reload(true)
 	p.engine.AddFunc("crop", crop)
+	p.engine.AddFunc("m", m)
 	p.engine.AddFunc("formatTime", formatTime)
 	return p
 }
@@ -59,8 +81,10 @@ func RenderTemplate(templateName string, data R) string {
 		template.
 			New("t").
 			Funcs(template.FuncMap{
-				"crop": crop,
-			}).Parse(readFile("web/" + templateName + ".html"))
+				"crop":       crop,
+				"formatTime": formatTime,
+				"m":          m,
+			}).Parse(readFile("web3/" + templateName + ".html"))
 
 	if err != nil {
 		log.Println(err)

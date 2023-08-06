@@ -29,16 +29,4 @@ func ViewTopic(c echo.Context) error {
 			"Page":     page,
 			"NextPage": nextPage,
 		})
-
-	/*
-		return c.HTML(200, RenderTemplate(
-			"thread",
-			R{"Topic": topic,
-				"Identity": identity,
-				"PrevPage": prevPage,
-				"Page":     page,
-				"NextPage": nextPage,
-			},
-		))
-	*/
 }

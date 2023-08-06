@@ -1,13 +1,16 @@
-<div class="card-body mb-0">
-    <div class="badge bg-light text-dark">{{ formatTime .Time }}</div>
-    <a href="/by/{{ .CreatorId }}" class="badge bg-light text-dark">{{ .Creator }}</a><br/>
-    {{if .ReplyCount}}
-    <div class="badge bg-info text-light">{{ .ReplyCount }} 🧵</div>
+<div class="card-body mb-0" hx-target="this" hx-swap="outerHTML">
+    <div class="badge bg-light text-dark">{{ formatTime $.Post.Time }}</div>
+    <a href="/by/{{ .Post.CreatorId }}" class="badge bg-light text-dark">{{ .Post.Creator }}</a><br/>
+    {{if .Post.ReplyCount}}
+    <div class="badge bg-info text-light">{{ .Post.ReplyCount }} 🧵</div>
     {{end}}
-
-    <a href="/{{ .Id }}">
-        {{ .Subject }}    
-    </a><br/>
-
-    <div style="white-space: pre-line;">{{ .Content }}</div>
+    <div>
+        <a href="/{{ .Post.Id }}">
+            {{ .Post.Subject }}    
+        </a><br/>
+        <div style="white-space: pre-line;">{{ .Post.Content }}</div>
+        {{if eq .Identity.Powers 95}}
+        <button class="btn btn-sm bg-warning" hx-get="/visualbasic.exe/post/{{.Post.Id}}/edit">📝</button>
+        {{end}}            
+    </div>
 </div>
