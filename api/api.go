@@ -236,13 +236,15 @@ func Start() {
 			return c.String(http.StatusBadRequest, "could not record the message")
 		}
 
-		return c.Render(200, "partials/newpost", R{
-			"Id":        id,
-			"Subject":   post.Subject,
-			"Creator":   identity.Name,
-			"CreatorId": identity.Id,
-			"Content":   post.Content,
-		})
+		return c.HTML(200, RenderTemplate(
+			"newpost", R{
+				"Id":        id,
+				"Subject":   post.Subject,
+				"Creator":   identity.Name,
+				"CreatorId": identity.Id,
+				"Content":   post.Content,
+			},
+		))
 	})
 
 	if err := e.Start(":3000"); err != nil {
