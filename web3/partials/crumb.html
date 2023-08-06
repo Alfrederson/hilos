@@ -1,0 +1,4 @@
+<div class="card-header">
+    <h5><a href="/{{ .Topic.ParentId }}">{{ if .Topic.ParentId }} ... {{else}} root{{end}}</a> &gt; {{ .Topic.Subject }}</h5>
+    <a class="badge bg-light text-dark" href="/by/{{ .Topic.CreatorId }}">by {{ .Topic.Creator }}~</a>
+</div>

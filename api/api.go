@@ -35,11 +35,11 @@ var web = WebConfig{
 func Start() {
 	e := echo.New()
 
+	pugger := MakePugger()
+	e.Renderer = pugger
+
 	//  ainda não sei como fazer isso funcionar, mas supostamente é pra acelerar um pouco
 	//  a geração das páginas. TODO: fazer isso.
-	//	t := &Template{
-	//		templates: template.Must(template.ParseGlob("web/*.html")),
-	//	}
 
 	//	e.Renderer = t
 	e404 := func(c echo.Context) error {
@@ -161,6 +161,7 @@ func Start() {
 		return c.JSON(http.StatusOK, resultado)
 	})
 
+	// edit a post
 	api.PUT("/post/:post_id", func(c echo.Context) error {
 		type Alteration struct {
 			Subject string `json:"subject" form:"subject"`
@@ -234,15 +235,14 @@ func Start() {
 			log.Println("couldn't reply to topic ", topic_id, ":", err)
 			return c.String(http.StatusBadRequest, "could not record the message")
 		}
-		return c.HTML(http.StatusAccepted, RenderTemplate(
-			"newpost", R{
-				"Id":        id,
-				"Subject":   post.Subject,
-				"Creator":   identity.Name,
-				"CreatorId": identity.Id,
-				"Content":   post.Content,
-			},
-		))
+
+		return c.Render(200, "partials/newpost", R{
+			"Id":        id,
+			"Subject":   post.Subject,
+			"Creator":   identity.Name,
+			"CreatorId": identity.Id,
+			"Content":   post.Content,
+		})
 	})
 
 	if err := e.Start(":3000"); err != nil {

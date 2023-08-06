@@ -87,6 +87,7 @@ func GetTopics(page int, amount int) []Post {
 func CreateTopic(t Post) (string, error) {
 	// salva
 	id := doc.New()
+	t.Time = time.Now()
 
 	err := db.posts.Save(id, t)
 	if err != nil {
@@ -146,6 +147,7 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 
 	reply.Id = doc.New()
 	reply.ParentId = topic_id
+	reply.Time = time.Now()
 
 	err := db.posts.Save(reply.Id, reply)
 	go reply.WriteToIndex()

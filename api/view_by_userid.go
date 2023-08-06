@@ -12,10 +12,19 @@ func ViewByUserId(c echo.Context) error {
 	if err != nil {
 		return c.String(400, err.Error())
 	}
-	return c.HTML(200, RenderTemplate(
+	return c.Render(200,
 		"index",
-		R{"Topics": topicList,
-			"Identity": identity,
+		R{
+			"Topics":    topicList,
+			"LastPosts": forum.Status().LastPosts,
+			"Identity":  identity,
 		},
-	))
+	)
+	/*
+		return c.HTML(200, RenderTemplate(
+			"index",
+			R{"Topics": topicList,
+				"Identity": identity,
+			},
+		))*/
 }

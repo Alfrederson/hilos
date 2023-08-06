@@ -1,0 +1,13 @@
+<div class="card-body mb-0">
+    <div class="badge bg-light text-dark">{{ formatTime .Time }}</div>
+    <a href="/by/{{ .CreatorId }}" class="badge bg-light text-dark">{{ .Creator }}</a><br/>
+    {{if .ReplyCount}}
+    <div class="badge bg-info text-light">{{ .ReplyCount }} 🧵</div>
+    {{end}}
+
+    <a href="/{{ .Id }}">
+        {{ .Subject }}    
+    </a><br/>
+
+    <div style="white-space: pre-line;">{{ .Content }}</div>
+</div>

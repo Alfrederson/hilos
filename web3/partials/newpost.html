@@ -1,0 +1,13 @@
+<div class="card-body">
+    <a href="/by/{{ .CreatorId }}" class="badge bg-light text-dark">
+        {{ .Creator }}
+    </a><br/>
+    <a href="/{{ .Id }}">
+        {{ .Subject }}
+    </a>                      
+    <div style="white-space: pre-line;">
+        {{ .Content }}
+    </div>      
+</div>
+<hr class="mb-0 mt-0"/>
+<div id="new-post"></div>

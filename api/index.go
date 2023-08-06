@@ -11,14 +11,9 @@ func Index(c echo.Context) error {
 	page := requestedPage(c)
 	topicList := forum.GetTopics(int(page), 10)
 
-	return c.HTML(200,
-		RenderTemplate(
-			"index",
-			R{
-				"Identity":  identity,
-				"LastPosts": forum.Status().LastPosts,
-				"Topics":    topicList,
-			},
-		),
-	)
+	return c.Render(200, "index", R{
+		"Identity":  identity,
+		"LastPosts": forum.Status().LastPosts,
+		"Topics":    topicList,
+	})
 }
