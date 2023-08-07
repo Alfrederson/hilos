@@ -204,7 +204,7 @@ func (db *DocDB) List(path string, from int, limit int) []string {
 }
 
 // Retorna o JSON de dentro dos objectos, ao invés de retornar os próprios objectos.
-func (db *DocDB) FindFirst(field string, op string, value string, page int, perPage int) ([]string, error) {
+func (db *DocDB) FindLastUpdated(field string, op string, value string, page int, perPage int) ([]string, error) {
 	var stuff = make([]string, 0, page)
 	db.conn.
 		Table("docs").
@@ -213,8 +213,8 @@ func (db *DocDB) FindFirst(field string, op string, value string, page int, perP
 		Where("t_"+field+".key "+op+" ?", value).
 		Offset(perPage * page).
 		Limit(perPage).
+		Order("docs.updated_at DESC").
 		Find(&stuff)
-		//		Order("docs.created_at ASC").
 	return stuff, nil
 }
 

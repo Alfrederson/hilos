@@ -133,8 +133,9 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 	//		return nil, errors.New("could not read this topic. dunno why.")
 	//	}
 
-	// TODO
-	lista, _ := db.posts.FindFirst("parent_id", "=", topic_id, int(fromPage), TOPIC_PAGE_COUNT)
+	// TODO: deixar a pessoa escolher se quer ver os primeiros, os últimos, os últimos que tiveram
+	//       respostas.
+	lista, _ := db.posts.FindLastUpdated("parent_id", "=", topic_id, int(fromPage), TOPIC_PAGE_COUNT)
 	for _, data := range lista {
 		mensagem := Post{}
 		err := json.Unmarshal([]byte(data), &mensagem)
