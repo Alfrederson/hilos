@@ -19,6 +19,7 @@ func requestedPage(c echo.Context) int64 {
 
 func newIdentity(c echo.Context) *identity.Identity {
 	i := identity.New()
+	i.IP = c.RealIP()
 	encoded, err := i.EncodeBase64()
 	if err != nil {
 		log.Println("cow went to the swamp")
@@ -40,5 +41,6 @@ func whoami(c echo.Context) *identity.Identity {
 	if !i.Check() {
 		return newIdentity(c)
 	}
+	i.IP = c.Request().Header.Get("X-Forwarded-For")
 	return i
 }

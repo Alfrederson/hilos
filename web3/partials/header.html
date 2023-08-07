@@ -4,7 +4,7 @@
 
         <span class="navbar nav-item">
             <a class="nav-link" href="/by/{{ .Identity.Id }}">
-            {{ .Identity.Name }}
+            {{ .Identity.Name }} {{if eq .Identity.Powers 95}} 👮‍♂️ {{end}}
             </a>
         </span>
     </div>

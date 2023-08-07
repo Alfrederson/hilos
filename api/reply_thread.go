@@ -28,6 +28,7 @@ func ReplyThread(c echo.Context) error {
 
 	post.CreatorId = identity.Id
 	post.Creator = identity.Name
+	post.IP = identity.IP
 
 	id, err := forum.ReplyTopic(topic_id, post)
 	if err != nil {

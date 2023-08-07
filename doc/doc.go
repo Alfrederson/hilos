@@ -202,7 +202,7 @@ func (db *DocDB) List(path string, from int, limit int) []string {
 	}
 }
 
-func (db *DocDB) Find(field string, op string, value string) ([]string, error) {
+func (db *DocDB) Find(field string, op string, value string, page int, perPage int) ([]string, error) {
 	if db.indexable == nil {
 		return nil, errors.New("db does not have an index")
 	}
@@ -210,8 +210,8 @@ func (db *DocDB) Find(field string, op string, value string) ([]string, error) {
 		Key string
 		Val string
 	}
-	entries := make([]Entry, 0, 10)
-	db.conn.Table("t_"+field).Where("key "+op+" ?", value).Find(&entries)
+	entries := make([]Entry, 0, perPage)
+	db.conn.Table("t_"+field).Where("key "+op+" ?", value).Offset(page * perPage).Limit(perPage).Find(&entries)
 	result := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		result = append(result, entry.Val)

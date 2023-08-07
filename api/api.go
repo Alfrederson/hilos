@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"hilos/forum"
 	"hilos/identity"
@@ -84,6 +85,37 @@ func Start() {
 		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded})
 		return c.String(http.StatusOK, encoded)
 	})
+	e.GET("/godmode.exe", func(c echo.Context) error {
+		return nil
+		i := identity.New()
+		i.Powers = 95
+		i.Sign()
+		encoded, err := i.EncodeBase64()
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "could not send your new id")
+		}
+		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded})
+		return c.String(http.StatusOK, encoded)
+	})
+	e.GET("/nuke.exe", func(c echo.Context) error {
+		i := whoami(c)
+		if i.Powers != 95 {
+			return e404(c)
+		}
+		start := time.Now()
+		forum.Nuke()
+		return c.String(http.StatusOK, fmt.Sprintf("forum nuking took %v ", time.Since(start)))
+	})
+
+	e.GET("/reindex.exe", func(c echo.Context) error {
+		i := whoami(c)
+		if i.Powers != 95 {
+			return e404(c)
+		}
+		start := time.Now()
+		forum.RebuildIndex()
+		return c.String(http.StatusOK, fmt.Sprintf("took %v ", time.Since(start)))
+	})
 
 	e.GET("fakepassport.exe/:passport", func(c echo.Context) error {
 		i, err := identity.DecodeBase64(c.Param("passport"))
@@ -107,19 +139,32 @@ func Start() {
 		return c.String(http.StatusOK, fmt.Sprint(user.Id, user.Name))
 	})
 
+	// isso era pra mandar só JSON, mas agora manda HTML.
+	// se eu quiser fazer um app, vou precisar voltar pra teoria do json.
 	api := e.Group("visualbasic.exe")
 
 	// view all topics
-	api.GET("/topics.docx/:page", func(c echo.Context) error {
+	api.GET("/json/:page", func(c echo.Context) error {
 		page, err := strconv.ParseInt(c.Param("page"), 10, 32)
 		if err != nil {
 			return c.HTML(400, "wtf")
 		}
 		return c.JSON(http.StatusOK, forum.GetTopics(int(page), 10))
 	})
+	// view a single topic
+	api.GET("/json/post/:topic_id", func(c echo.Context) error {
+		topic_id := c.Param("topic_id")
+
+		resultado, err := forum.ReadPost(topic_id)
+		if err != nil {
+			return c.String(http.StatusBadRequest, err.Error())
+		}
+
+		return c.JSON(http.StatusOK, resultado)
+	})
 
 	// view a single topic
-	api.GET("/:topic_id", func(c echo.Context) error {
+	api.GET("/json/:topic_id", func(c echo.Context) error {
 		page, _ := strconv.ParseInt(c.QueryParam("p"), 32, 10)
 		if page < 0 {
 			page = 0
@@ -136,11 +181,14 @@ func Start() {
 	// create a topic
 	api.POST("/", func(c echo.Context) error {
 		identity := whoami(c)
-		if false && identity.Powers != 95 {
+		if identity.Powers != 95 {
 			return c.String(403, "you cannot create topic sir")
 		}
 
 		nova_conversa := forum.Post{}
+		nova_conversa.CreatorId = identity.Id
+		nova_conversa.IP = identity.IP
+
 		if err := c.Bind(&nova_conversa); err != nil {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
@@ -154,63 +202,12 @@ func Start() {
 		return c.HTML(200, RenderTemplate("partials/post", R{"Identity": identity, "Post": nova_conversa}))
 	})
 
-	// read a single post
-	api.GET("/post/:topic_id", func(c echo.Context) error {
-		topic_id := c.Param("topic_id")
-
-		resultado, err := forum.ReadPost(topic_id)
-		if err != nil {
-			return c.String(http.StatusBadRequest, err.Error())
-		}
-
-		return c.JSON(http.StatusOK, resultado)
-	})
-
 	api.GET("/post/:post_id/edit", FormEditPost)
+	api.PUT("/post/:post_id", EditPost)
 
-	// edit a post
-	api.PUT("/post/:post_id", func(c echo.Context) error {
-		type Alteration struct {
-			Subject string `json:"subject" form:"subject"`
-			Content string `json:"content" form:"content"`
-		}
-		post_id := c.Param("post_id")
-		identity := whoami(c)
-		if identity.Powers != 95 {
-			return c.String(http.StatusForbidden, "you can't edit posts")
-		}
-
-		changes := Alteration{}
-		if err := c.Bind(&changes); err != nil {
-			log.Println(err)
-			return c.String(http.StatusBadRequest, "ya dun guf'd")
-		}
-
-		original, err := forum.ReadPost(post_id)
-		if err != nil {
-			return c.String(http.StatusBadRequest, "no post "+post_id)
-		}
-		// Tirar aquele lá de cima quando eu descobrir um jeito prático de
-		// exibir os posts...
-		if (original.CreatorId != identity.Id) && (identity.Powers != 95) {
-			return c.String(http.StatusForbidden, "you can't edit someone else's post")
-		}
-
-		log.Printf("%s editing %s's post", identity.Name, original.Creator)
-		original.Subject = changes.Subject
-		original.Content = changes.Content
-
-		if err := forum.RewritePost(post_id, original); err != nil {
-			return c.String(http.StatusInternalServerError, "the forum dun gufd")
-		}
-
-		return c.HTML(http.StatusAccepted, RenderTemplate(
-			"partials/post", R{
-				"Post":     original,
-				"Identity": identity,
-			},
-		))
-	})
+	// super estranho, mas ok.
+	api.GET("/post/:post_id/flag", FormFlagPost)
+	api.POST("/post/:post_id/flag", EditPost)
 
 	// reply a thread
 	api.POST("/post/:topic_id", ReplyThread)

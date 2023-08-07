@@ -17,7 +17,8 @@ const (
 )
 
 var db struct {
-	posts *doc.DocDB
+	posts   *doc.DocDB
+	reports *doc.DocDB
 
 	status *doc.DocDB
 }
@@ -43,11 +44,20 @@ func (s *ForumStatus) PubPost(p *Post) {
 
 func RebuildIndex() {
 	db.posts.RebuildIndex()
+	db.reports.RebuildIndex()
 }
-
+func Nuke() {
+	db.posts.Clear()
+	db.reports.Clear()
+	db.posts.RebuildIndex()
+	db.reports.RebuildIndex()
+}
 func Start() {
 	db.posts = doc.Create("posts.db")
 	db.posts.UsingIndexable(&Post{})
+
+	db.reports = doc.Create("reports.db")
+	db.reports.UsingIndexable(&Report{})
 
 	db.status = doc.Create("status.db")
 
@@ -69,9 +79,9 @@ func Start() {
 	log.Println("forum component initialized")
 }
 
-func GetTopics(page int, amount int) []Post {
-	lista, err := db.posts.Find("parent_id", "=", "")
-	resultado := make([]Post, 0, amount)
+func GetTopics(page int, count int) []Post {
+	lista, err := db.posts.Find("parent_id", "=", "", page, count)
+	resultado := make([]Post, 0, count)
 
 	if err != nil {
 		resultado = append(resultado, Post{
@@ -116,7 +126,7 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 
 	topic.Replies = make([]Post, 0, TOPIC_PAGE_COUNT)
 
-	lista, err := db.posts.Find("parent_id", "=", topic_id)
+	lista, err := db.posts.Find("parent_id", "=", topic_id, int(fromPage), TOPIC_PAGE_COUNT)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("could not read this topic. dunno why.")
@@ -133,8 +143,8 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 	return &topic, nil
 }
 
-func ReadUserPosts(userId string) ([]Post, error) {
-	lista, err := db.posts.Find("creator_id", "=", userId)
+func ReadUserPosts(userId string, fromPage int64) ([]Post, error) {
+	lista, err := db.posts.Find("creator_id", "=", userId, int(fromPage), TOPIC_PAGE_COUNT)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("could not find posts of user")

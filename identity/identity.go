@@ -29,6 +29,7 @@ func sign(message, secret string) string {
 type Identity struct {
 	Name      string `json:"name"`
 	Id        string `json:"id"`
+	IP        string `json:"-"`
 	Powers    int    `json:"powers"`
 	Signature string `json:"sign"`
 }

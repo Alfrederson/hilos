@@ -3,12 +3,15 @@
         <div class="card-header pb-0 pt-0 pl-1">
             <p class="badge p-0 mb-0">
                 <a href="/by/{{ .Post.CreatorId }}" class="text-dark">{{ .Post.Creator }}</a>
-                {{if or (eq .Identity.Powers 95) (eq .Identity.Id .Post.CreatorId)}}
                 <span class="btn-group" role="group">
+                    {{if or (eq .Identity.Powers 95) (eq .Identity.Id .Post.CreatorId)}}
                     <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/edit">📝edit</button>
+                    {{end}}
+                    {{if (eq .Identity.Powers 95)}}                                    
                     <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/prune">🧨prune</button>
+                    {{end}}
+                    <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/flag">🚩report</button>
                 </span>
-                {{end}}                                    
             </p>
         </div>
         <div class="card-body p-2" style="white-space: pre-line;"><a href="/{{ .Post.Id }}">{{ .Post.Subject }}</a>        
@@ -16,11 +19,17 @@
         </div>
         <div class="card-footer p-1">
             <div class="badge text-dark">
-                at {{ formatTime $.Post.Time }}
+                at {{ formatTime .Post.Time }}
+                {{if eq .Identity.Powers 95}}
+                    (IP: {{.Post.IP}})
+                {{end}}    
             </div>
             
             {{if .Post.ReplyCount}}
-            <div class="badge text-dark">{{ .Post.ReplyCount }} 🧵</div>
+            <div class="badge text-dark">{{ .Post.ReplyCount }}🧵</div>
+            {{end}}
+            {{if .Post.ReportCount}}
+            <div class="badge text-dark">{{ .Post.ReportCount}}🚩</div>
             {{end}}
         </div>
     </div>
