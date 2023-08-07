@@ -41,6 +41,6 @@ func whoami(c echo.Context) *identity.Identity {
 	if !i.Check() {
 		return newIdentity(c)
 	}
-	i.IP = c.Request().Header.Get("X-Forwarded-For")
+	i.IP = c.RealIP()
 	return i
 }
