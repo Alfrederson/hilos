@@ -1,6 +1,7 @@
 package forum
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
@@ -126,17 +127,20 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 
 	topic.Replies = make([]Post, 0, TOPIC_PAGE_COUNT)
 
-	lista, err := db.posts.Find("parent_id", "=", topic_id, int(fromPage), TOPIC_PAGE_COUNT)
-	if err != nil {
-		log.Println(err)
-		return nil, errors.New("could not read this topic. dunno why.")
-	}
+	//	lista, err := db.posts.Find("parent_id", "=", topic_id, int(fromPage), TOPIC_PAGE_COUNT)
+	//	if err != nil {
+	//		log.Println(err)
+	//		return nil, errors.New("could not read this topic. dunno why.")
+	//	}
 
 	// TODO
-	for _, reply_id := range lista {
+	lista, _ := db.posts.FindFirst("parent_id", "=", topic_id, int(fromPage), TOPIC_PAGE_COUNT)
+	for _, data := range lista {
 		mensagem := Post{}
-		db.posts.Get(reply_id, &mensagem)
-		mensagem.Id = reply_id
+		err := json.Unmarshal([]byte(data), &mensagem)
+		if err != nil {
+			log.Println(err)
+		}
 		topic.Replies = append(topic.Replies, mensagem)
 	}
 
@@ -144,19 +148,17 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 }
 
 func ReadUserPosts(userId string, fromPage int64) ([]Post, error) {
-	lista, err := db.posts.Find("creator_id", "=", userId, int(fromPage), TOPIC_PAGE_COUNT)
-	if err != nil {
-		log.Println(err)
-		return nil, errors.New("could not find posts of user")
-	}
-	resultado := make([]Post, 0, 100)
-	for _, id := range lista {
+	lista, _ := db.posts.FindLast("creator_id", "=", userId, int(fromPage), TOPIC_PAGE_COUNT)
+	posts := make([]Post, 0, TOPIC_PAGE_COUNT)
+	for _, data := range lista {
 		mensagem := Post{}
-		db.posts.Get(id, &mensagem)
-		mensagem.Id = id
-		resultado = append(resultado, mensagem)
+		err := json.Unmarshal([]byte(data), &mensagem)
+		if err != nil {
+			log.Println(err)
+		}
+		posts = append(posts, mensagem)
 	}
-	return resultado, nil
+	return posts, nil
 }
 
 // duas funções com exatamente a mesma implementação................

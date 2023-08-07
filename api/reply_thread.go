@@ -14,7 +14,7 @@ func ReplyThread(c echo.Context) error {
 	identity := whoami(c)
 
 	post := forum.Post{
-		CreatorId: identity.IP,
+		CreatorId: identity.Id,
 		Creator:   identity.Name,
 		IP:        identity.IP,
 		Time:      time.Now(),

@@ -203,6 +203,47 @@ func (db *DocDB) List(path string, from int, limit int) []string {
 	}
 }
 
+// Retorna o JSON de dentro dos objectos, ao invés de retornar os próprios objectos.
+func (db *DocDB) FindFirst(field string, op string, value string, page int, perPage int) ([]string, error) {
+	var stuff = make([]string, 0, page)
+	db.conn.
+		Table("docs").
+		Select("data").
+		Joins("INNER JOIN t_"+field+" ON docs.path = t_"+field+".val").
+		Where("t_"+field+".key "+op+" ?", value).
+		Offset(perPage * page).
+		Limit(perPage).
+		Find(&stuff)
+		//		Order("docs.created_at ASC").
+	return stuff, nil
+}
+
+func (db *DocDB) FindLast(field string, op string, value string, page int, perPage int) ([]string, error) {
+	/*
+		SELECT data
+		FROM docs
+		WHERE path IN
+			(SELECT val
+			 FROM t_parent_id
+			 WHERE key = "FefyBU41yfkcgdu7")
+		OFFSET page*perPage
+		LIMIT perPage
+		ORDER BY updated_at DESC;
+	*/
+	var stuff = make([]string, 0, page)
+	db.conn.
+		Table("docs").
+		Select("data").
+		Joins("INNER JOIN t_"+field+" ON docs.path = t_"+field+".val").
+		Where("t_"+field+".key "+op+" ?", value).
+		Offset(perPage * page).
+		Limit(perPage).
+		Order("docs.created_at DESC").
+		Find(&stuff)
+
+	return stuff, nil
+}
+
 func (db *DocDB) Find(field string, op string, value string, page int, perPage int) ([]string, error) {
 	if db.indexable == nil {
 		return nil, errors.New("db does not have an index")
@@ -212,6 +253,7 @@ func (db *DocDB) Find(field string, op string, value string, page int, perPage i
 		Val string
 	}
 	entries := make([]Entry, 0, perPage)
+
 	db.conn.Table("t_"+field).Where("key "+op+" ?", value).Offset(page * perPage).Limit(perPage).Find(&entries)
 	result := make([]string, 0, len(entries))
 	for _, entry := range entries {
