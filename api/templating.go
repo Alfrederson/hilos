@@ -60,7 +60,7 @@ type Pugger struct {
 func MakePugger() Pugger {
 	p := Pugger{}
 	p.engine = html.New("./web3", ".html")
-	p.engine.Reload(true)
+	//p.engine.Reload(true)
 	p.engine.AddFunc("crop", crop)
 	p.engine.AddFunc("m", m)
 	p.engine.AddFunc("formatTime", formatTime)
