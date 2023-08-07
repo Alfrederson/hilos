@@ -33,6 +33,7 @@
         {{template "partials/header" .}}
         <div class="container" style="max-width:768px">
             {{embed}}
+            {{if .Elapsed}} <p class="badge text-dark">{{.Elapsed}}</p> {{end}}
         </div>
     </body>
 </html>

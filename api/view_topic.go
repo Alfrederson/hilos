@@ -2,11 +2,13 @@ package api
 
 import (
 	"hilos/forum"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
 func ViewTopic(c echo.Context) error {
+	start := time.Now()
 	identity := whoami(c)
 	var nextPage int64
 	var prevPage int64
@@ -28,5 +30,6 @@ func ViewTopic(c echo.Context) error {
 			"PrevPage": prevPage,
 			"Page":     page,
 			"NextPage": nextPage,
+			"Elapsed":  time.Since(start),
 		})
 }
