@@ -26,6 +26,7 @@ func ViewTopic(c echo.Context) error {
 	return c.Render(200,
 		"thread",
 		R{"Topic": topic,
+			"Title":       topic.Subject,
 			"Description": crop(topic.Content),
 			"Identity":    identity,
 			"PrevPage":    prevPage,
