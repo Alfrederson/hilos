@@ -9,7 +9,7 @@ type Report struct {
 	PostID    string    `json:"post_id,omitempty"`
 	Message   string    `json:"message,omitempty"`
 	CreatorID string    `json:"creator_id"`
-	IP        string    `json:"ip"`
+	IP        string    `json:"ip,omitempty"`
 	Time      time.Time `json:"time,omitempty"`
 }
 
@@ -47,7 +47,7 @@ type Post struct {
 	ReplyCount  int       `json:"replies_count"`
 	Replies     []Post    `json:"replies,omitempty"`
 	ReportCount int       `json:"report_count,omitempty"`
-	IP          string    `json:"-"`
+	IP          string    `json:"ip,omitempty"`
 }
 
 func (p Post) Indices() []string {
