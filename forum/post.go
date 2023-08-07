@@ -48,6 +48,7 @@ type Post struct {
 	Replies     []Post    `json:"replies,omitempty"`
 	ReportCount int       `json:"report_count,omitempty"`
 	IP          string    `json:"ip,omitempty"`
+	Frozen      bool      `json:"frozen"`
 }
 
 func (p Post) Indices() []string {

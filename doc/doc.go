@@ -113,10 +113,11 @@ func (db *DocDB) Save(path string, object interface{}) error {
 		return errors.New("invalid object")
 	}
 	doc := Doc{
-		Path: path,
-		Data: bytes,
+		UpdatedAt: time.Now(),
+		Path:      path,
+		Data:      bytes,
 	}
-	log.Println("saving " + path)
+	log.Println("rewriting " + path)
 	db.conn.Save(&doc)
 
 	return nil

@@ -1,5 +1,5 @@
 <div class="p-1" hx-target="this" hx-swap="outerHTML">
-    <div class="card">
+    <div class="card" style="width:fit-content;">
         <div class="card-header pb-0 pt-0 pl-1">
             <p class="badge p-0 mb-0">
                 <a href="/by/{{ .Post.CreatorId }}" class="text-dark">{{ .Post.Creator }}</a>
@@ -8,7 +8,12 @@
                     <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/edit">📝edit</button>
                     {{end}}
                     {{if (eq .Identity.Powers 95)}}                                    
-                    <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/prune">🧨prune</button>
+                        <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/prune">🧨prune</button>
+                        {{if .Post.Frozen}}
+                            <button class="btn btn-sm btn-link" hx-put="/visualbasic.exe/post/{{.Post.Id}}/unfreeze">🔓unfreeze</button>
+                        {{else}}
+                            <button class="btn btn-sm btn-link" hx-put="/visualbasic.exe/post/{{.Post.Id}}/freeze">🔒freeze</button>
+                        {{end}}
                     {{end}}
                 </span>
             </p>
@@ -18,12 +23,21 @@
         </div>
         <div class="card-footer p-1">
             <div class="badge text-dark">
-                at {{ formatTime $.Post.Time }}
+                at {{ formatTime .Post.Time }}
+                {{if eq .Identity.Powers 95}}
+                    (IP: {{.Post.IP}})
+                {{end}}    
             </div>
             
             {{if .Post.ReplyCount}}
-            <div class="badge text-dark">{{ .Post.ReplyCount }} 🧵</div>
+            <div class="badge text-dark">{{ .Post.ReplyCount }}🧵</div>
+            {{end}}
+            {{if .Post.ReportCount}}
+            <div class="badge text-dark">{{ .Post.ReportCount}}🚩</div>
             {{end}}
         </div>
     </div>
 </div>
+{{if .NewPost}}
+<div id="new-post"></div>
+{{end}}

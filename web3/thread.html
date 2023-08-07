@@ -5,5 +5,7 @@
     {{ end }}
     <div id="new-post"></div>
 {{template "partials/paging" .}}
-{{template "partials/replyform" .}}
 
+{{if not .Topic.Frozen}}
+    {{template "partials/replyform" .}}
+{{end}}

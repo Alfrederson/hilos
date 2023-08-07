@@ -8,9 +8,16 @@
                     <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/edit">📝edit</button>
                     {{end}}
                     {{if (eq .Identity.Powers 95)}}                                    
-                    <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/prune">🧨prune</button>
+                        <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/prune">🧨prune</button>
+                        {{if .Post.Frozen}}
+                            <button class="btn btn-sm btn-link" hx-put="/visualbasic.exe/post/{{.Post.Id}}/unfreeze">🔓unfreeze</button>
+                        {{else}}
+                            <button class="btn btn-sm btn-link" hx-put="/visualbasic.exe/post/{{.Post.Id}}/freeze">🔒freeze</button>
+                        {{end}}    
                     {{end}}
-                    <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/flag">🚩report</button>
+                    {{if not .Post.Frozen}}
+                        <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/flag">🚩report</button>
+                    {{end}}
                 </span>
             </p>
         </div>
@@ -23,13 +30,12 @@
                 {{if eq .Identity.Powers 95}}
                     (IP: {{.Post.IP}})
                 {{end}}    
-            </div>
-            
+            </div>            
             {{if .Post.ReplyCount}}
-            <div class="badge text-dark">{{ .Post.ReplyCount }}🧵</div>
+                <div class="badge text-dark">{{ .Post.ReplyCount }}🧵</div>
             {{end}}
             {{if .Post.ReportCount}}
-            <div class="badge text-dark">{{ .Post.ReportCount}}🚩</div>
+                <div class="badge text-dark">{{ .Post.ReportCount }}🚩</div>
             {{end}}
         </div>
     </div>

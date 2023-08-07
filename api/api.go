@@ -212,6 +212,10 @@ func Start() {
 	// reply a thread
 	api.POST("/post/:topic_id", ReplyThread)
 
+	// freeze/unfreeze a post
+	api.PUT("/post/:post_id/freeze", FreezePost)
+	api.PUT("/post/:post_id/unfreeze", UnfreezePost)
+
 	if err := e.Start(":3000"); err != nil {
 		panic(err)
 	}

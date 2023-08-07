@@ -159,16 +159,28 @@ func ReadUserPosts(userId string, fromPage int64) ([]Post, error) {
 	return resultado, nil
 }
 
-func ReplyTopic(topic_id string, reply Post) (string, error) {
-	// vê se o tópico existe
+// duas funções com exatamente a mesma implementação................
+func GetTopic(topic_id string) (*Post, error) {
 	conversa := Post{}
 	if err := db.posts.Get(topic_id, &conversa); err != nil {
-		return "", errors.New("no such topic")
+		return nil, errors.New("no such topic")
 	}
+	return &conversa, nil
+}
+func ReadPost(topicId string) (*Post, error) {
+	resultado := Post{}
+	if err := db.posts.Get(topicId, &resultado); err != nil {
+		return nil, errors.New("could not read post " + topicId)
+	}
+	return &resultado, nil
+}
+
+func ReplyTopic(topic *Post, reply Post) (string, error) {
+	// vê se o tópico existe
 
 	reply.Id = doc.New()
 
-	reply.ParentId = topic_id
+	reply.ParentId = topic.Id
 	reply.Time = time.Now()
 
 	err := db.posts.Add(reply.Id, reply)
@@ -178,8 +190,8 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 		return "", errors.New("couldn't save the post")
 	}
 
-	conversa.ReplyCount += 1
-	if err := db.posts.Save(topic_id, conversa); err != nil {
+	topic.ReplyCount += 1
+	if err := db.posts.Save(topic.Id, topic); err != nil {
 		log.Println("error incrementing reply count:", err)
 	}
 
@@ -188,14 +200,6 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 	log.Printf("%s (%s) replied to %s\n", reply.Creator, reply.IP, reply.ParentId)
 
 	return reply.Id, nil
-}
-
-func ReadPost(topicId string) (*Post, error) {
-	resultado := Post{}
-	if err := db.posts.Get(topicId, &resultado); err != nil {
-		return nil, errors.New("could not read post " + topicId)
-	}
-	return &resultado, nil
 }
 
 // não pode trocar o autor e o parent_id porque
