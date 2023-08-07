@@ -2,7 +2,6 @@ package forum
 
 import (
 	"errors"
-	"log"
 	"time"
 )
 
@@ -20,7 +19,14 @@ type Post struct {
 	Replies    []Post    `json:"replies,omitempty"`
 }
 
-func (p *Post) ReadField(field string) (string, error) {
+func (p Post) Indices() []string {
+	return []string{
+		"parent_id",
+		"creator_id",
+	}
+}
+
+func (p Post) ReadField(field string) (string, error) {
 	switch field {
 	case "parent_id":
 		return p.ParentId, nil
@@ -29,22 +35,4 @@ func (p *Post) ReadField(field string) (string, error) {
 	default:
 		return "", errors.New("invalid field " + field)
 	}
-}
-
-func (p *Post) WriteToIndex() {
-	// parent id
-	err := db.posts_by_parent.Add(p.ParentId, p.Id)
-	if err != nil {
-		log.Println("ERROR indexing post ", p.Id, ":", err)
-	}
-	// creator id
-	err = db.posts_by_creator.Add(p.CreatorId, p.Id)
-	if err != nil {
-		log.Println("ERROR indexing post by parent", p.Id, ":", err)
-	}
-}
-
-func (p *Post) RemoveFromIndex() {
-	db.posts_by_parent.Delete(p.ParentId)
-	db.posts_by_creator.Delete(p.CreatorId)
 }

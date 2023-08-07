@@ -136,8 +136,8 @@ func Start() {
 	// create a topic
 	api.POST("/", func(c echo.Context) error {
 		identity := whoami(c)
-		if identity.Powers != 95 {
-			return e404(c)
+		if false && identity.Powers != 95 {
+			return c.String(403, "you cannot create topic sir")
 		}
 
 		nova_conversa := forum.Post{}
@@ -146,10 +146,12 @@ func Start() {
 		}
 
 		id, err := forum.CreateTopic(nova_conversa)
+		nova_conversa.Id = id
+
 		if err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		return c.String(http.StatusCreated, id)
+		return c.HTML(200, RenderTemplate("partials/post", R{"Identity": identity, "Post": nova_conversa}))
 	})
 
 	// read a single post

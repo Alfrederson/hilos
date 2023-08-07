@@ -40,12 +40,16 @@ func GenerateId(length int) string {
 var db *gorm.DB
 
 type Doc struct {
+	CreatedAt time.Time `gorm:"created_at"`
+	UpdatedAt time.Time `gorm:"updated_at"`
+
 	Path string `gorm:"primaryKey"`
 	Data datatypes.JSON
 }
 
 type Indexable = interface {
 	ReadField(string) (string, error)
+	Indices() []string
 }
 
 type DocumentData map[string]interface{}
@@ -70,10 +74,11 @@ const (
 )
 
 type DocDB struct {
-	conn    *gorm.DB
-	mutex   sync.Mutex
-	txMutex sync.Mutex
-	Type    int
+	conn      *gorm.DB
+	mutex     sync.Mutex
+	txMutex   sync.Mutex
+	Type      int
+	indexable Indexable
 }
 
 func New(parts ...interface{}) string {
@@ -111,10 +116,16 @@ func (db *DocDB) Save(path string, object interface{}) error {
 		Path: path,
 		Data: bytes,
 	}
-
+	log.Println("saving " + path)
 	db.conn.Save(&doc)
 
 	return nil
+}
+
+func (db *DocDB) Clear() {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+	db.conn.Exec("DELETE from docs")
 }
 
 func (db *DocDB) Add(path string, object interface{}) error {
@@ -125,7 +136,30 @@ func (db *DocDB) Add(path string, object interface{}) error {
 		log.Println(err)
 		return errors.New("invalid object")
 	}
-	db.conn.Exec("INSERT INTO docs(path,data) VALUES(?,?)", path, string(bytes))
+	db.conn.Exec("INSERT INTO docs(path,data,created_at,updated_at) VALUES(?,?,?,?)", path, string(bytes), time.Now(), time.Now())
+
+	/*
+		CREATE TABLE IF NOT EXISTS t_` + v + ` (
+			created_at TIME,
+			key TEXT PRIMARY KEY,
+			val TEXT
+		);
+		CREATE INDEX IF NOT EXISTS idx_val_` + v + ` ON t_` + v + `(val);`
+	*/
+
+	// indexar...
+	if thing, ok := object.(Indexable); !ok {
+		log.Println("thing is not indexable.")
+	} else {
+		for _, v := range thing.Indices() {
+			val, err := thing.ReadField(v)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			db.conn.Exec("INSERT INTO t_"+v+"(created_at,key,val) VALUES(?,?,?)", time.Now(), val, path)
+		}
+	}
 	return nil
 }
 
@@ -148,6 +182,8 @@ func (db *DocDB) Delete(path string) {
 	db.conn.Delete(path)
 }
 
+// holy fuck
+// como agente faz pra ver tudo em ordem cronológica decrescente?
 func (db *DocDB) List(path string, from int, limit int) []string {
 	if db.Type == TYPE_INDEX {
 		type Doc struct {
@@ -161,9 +197,26 @@ func (db *DocDB) List(path string, from int, limit int) []string {
 		}
 		return list
 	} else {
-		list := []string{"list operation can only be useed on indices"}
+		list := []string{"list operation can only be used on indices"}
 		return list
 	}
+}
+
+func (db *DocDB) Find(field string, op string, value string) ([]string, error) {
+	if db.indexable == nil {
+		return nil, errors.New("db does not have an index")
+	}
+	type Entry struct {
+		Key string
+		Val string
+	}
+	entries := make([]Entry, 0, 10)
+	db.conn.Table("t_"+field).Where("key "+op+" ?", value).Find(&entries)
+	result := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		result = append(result, entry.Val)
+	}
+	return result, nil
 }
 
 func (db *DocDB) Begin() {
@@ -206,7 +259,7 @@ func Create(file string) *DocDB {
 	var err error
 
 	result.conn, err = gorm.Open(conn, &gorm.Config{})
-	result.conn.Exec("PRAGMA journal_mode = WAL;")
+	// result.conn.Exec("PRAGMA journal_mode = WAL;")
 	if err != nil {
 		panic("não consegui criar instancia do docdb")
 	}
@@ -227,26 +280,56 @@ func Create(file string) *DocDB {
 
 func (d *DocDB) UsingIndexable(i Indexable) {
 	log.Println("Using indexable")
+	for _, v := range i.Indices() {
+		log.Println("index on field:", v)
+		query := `
+		CREATE TABLE IF NOT EXISTS t_` + v + ` (
+			id INTEGER NOT NULL PRIMARY KEY,
+			created_at TIME,
+			key TEXT,
+			val TEXT
+		);
+		CREATE INDEX IF NOT EXISTS idx_key_` + v + ` ON t_` + v + `(key);
+		CREATE INDEX IF NOT EXISTS idx_val_` + v + ` ON t_` + v + `(val);`
+		d.conn.Exec(query)
+	}
+	d.indexable = i
 }
 
-func CreateIndex(file string) *DocDB {
-	conn := sqlite.Open(DOCDB_PATH + file)
-	result := DocDB{
-		Type: TYPE_INDEX,
+func (d *DocDB) RebuildIndex() {
+	if d.indexable == nil {
+		log.Println("db has no index")
 	}
-	type Doc struct {
-		//gorm.Model
-		Path string `gorm:"index"`
-		Data datatypes.JSON
+	log.Println("dropping indices...")
+	for _, v := range d.indexable.Indices() {
+		query := "DROP INDEX idx_key_" + v + "; DROP INDEX idx_val_" + v + "; DROP TABLE t_" + v + ";"
+		d.conn.Exec(query)
 	}
-
-	var err error
-	result.conn, err = gorm.Open(conn, &gorm.Config{})
-	if err != nil {
-		panic("não consegui criar instância do docdb")
+	log.Println("rebuilding indices...")
+	d.UsingIndexable(d.indexable)
+	offset := 0
+	type Thing map[string]interface{}
+	for {
+		docs := make([]Doc, 0, 10)
+		d.conn.Offset(offset).Limit(10).Find(&docs)
+		if len(docs) == 0 {
+			log.Println("done")
+			break
+		}
+		for _, doc := range docs {
+			t := Thing{}
+			err := json.Unmarshal(doc.Data, &t)
+			if err != nil {
+				log.Println("failed to unmarshal " + doc.Path)
+				continue
+			}
+			// pra cada campo indexado...
+			for _, field := range d.indexable.Indices() {
+				d.conn.Exec("INSERT INTO t_"+field+"(created_at,key,val) VALUES(?,?,?);", doc.CreatedAt, t[field], doc.Path)
+			}
+		}
+		offset += 10
 	}
-	result.conn.AutoMigrate(&Doc{})
-	return &result
 }
 
 func init() {

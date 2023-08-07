@@ -1,16 +1,30 @@
-<div class="card-body mb-0" hx-target="this" hx-swap="outerHTML">
-    <div class="badge bg-light text-dark">{{ formatTime $.Post.Time }}</div>
-    <a href="/by/{{ .Post.CreatorId }}" class="badge bg-light text-dark">{{ .Post.Creator }}</a><br/>
-    {{if .Post.ReplyCount}}
-    <div class="badge bg-info text-light">{{ .Post.ReplyCount }} 🧵</div>
-    {{end}}
-    <div>
-        <a href="/{{ .Post.Id }}">
-            {{ .Post.Subject }}    
-        </a><br/>
-        <div style="white-space: pre-line;">{{ .Post.Content }}</div>
-        {{if eq .Identity.Powers 95}}
-        <button class="btn btn-sm bg-warning" hx-get="/visualbasic.exe/post/{{.Post.Id}}/edit">📝</button>
-        {{end}}            
+<div class="p-1" hx-target="this" hx-swap="outerHTML">
+    <div class="card" style="width:fit-content;">
+        <div class="card-header pb-0 pt-0 pl-1">
+            <p class="badge p-0 mb-0">
+                <a href="/by/{{ .Post.CreatorId }}" class="text-dark">{{ .Post.Creator }}</a>
+                {{if or (eq .Identity.Powers 95) (eq .Identity.Id .Post.CreatorId)}}
+                <span class="btn-group" role="group">
+                    <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/edit">📝edit</button>
+                    <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/prune">🧨prune</button>
+                </span>
+                {{end}}                                    
+            </p>
+        </div>
+        <div class="card-body p-2" style="white-space: pre-line;"><a href="/{{ .Post.Id }}">{{ .Post.Subject }}</a>        
+            {{ .Post.Content }}
+        </div>
+        <div class="card-footer p-1">
+            <div class="badge text-dark">
+                at {{ formatTime $.Post.Time }}
+            </div>
+            
+            {{if .Post.ReplyCount}}
+            <div class="badge text-dark">{{ .Post.ReplyCount }} 🧵</div>
+            {{end}}
+        </div>
     </div>
 </div>
+{{if .NewPost}}
+<div id="new-post"></div>
+{{end}}

@@ -15,5 +15,6 @@ func main() {
 	os.MkdirAll("data", os.ModeDir)
 
 	forum.Start()
+	forum.RebuildIndex()
 	api.Start()
 }

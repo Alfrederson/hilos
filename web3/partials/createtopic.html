@@ -1,0 +1,18 @@
+<div class="p-1">
+    <div class="card">
+        <div class="card-body">
+            <form hx-post="/visualbasic.exe/" hx-target="#new-topic" hx-swap="outerHTML">
+                <input type="hidden" value="{{ .Identity.Name }}" name="creator" />
+                <div class="form-group mb-3">
+                    <input type="text" class="form-control" name="subject" placeholder="..." value="re: {{ .Topic.Subject }}">
+                </div>
+                <div class="form-group mb-3">
+                    <textarea class="form-control" placeholder="..." name="content"></textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <button type="submit" class="badge bg-dark text-light btn form-control">Create new topic</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

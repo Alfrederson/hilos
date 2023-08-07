@@ -1,14 +1,9 @@
-<div class="card mb-3">
-    {{template "partials/crumb" .}}
-    <div class="card-body">
-        <p style="white-space: pre-line;">{{ .Topic.Content }}</p>
-        {{ range $index, $reply := .Topic.Replies }}
-            {{template "partials/post" (m "Post" $reply "Identity" $.Identity)}}
-        {{ end }}
-        <div id="new-post"></div>
-    </div>
-    {{template "partials/paging" .}}
-
-    {{template "partials/replyform" .}}
-</div>
+{{template "partials/crumb" .}}
+    <p style="white-space: pre-line;">{{ .Topic.Content }}</p>
+    {{ range $index, $reply := .Topic.Replies }}
+        {{template "partials/post" (m "Post" $reply "Identity" $.Identity)}}
+    {{ end }}
+    <div id="new-post"></div>
+{{template "partials/paging" .}}
+{{template "partials/replyform" .}}
 

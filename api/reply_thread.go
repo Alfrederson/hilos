@@ -38,6 +38,7 @@ func ReplyThread(c echo.Context) error {
 	post.Time = time.Now()
 	return c.HTML(200, RenderTemplate(
 		"partials/post", R{
+			"NewPost":  true,
 			"Identity": identity,
 			"Post":     post,
 		},

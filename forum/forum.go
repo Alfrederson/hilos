@@ -17,9 +17,7 @@ const (
 )
 
 var db struct {
-	posts            *doc.DocDB
-	posts_by_parent  *doc.DocDB
-	posts_by_creator *doc.DocDB
+	posts *doc.DocDB
 
 	status *doc.DocDB
 }
@@ -43,13 +41,13 @@ func (s *ForumStatus) PubPost(p *Post) {
 	}
 }
 
+func RebuildIndex() {
+	db.posts.RebuildIndex()
+}
+
 func Start() {
 	db.posts = doc.Create("posts.db")
-
 	db.posts.UsingIndexable(&Post{})
-
-	db.posts_by_parent = doc.CreateIndex("posts.parent_id.db")
-	db.posts_by_creator = doc.CreateIndex("posts.creator_id.db")
 
 	db.status = doc.Create("status.db")
 
@@ -72,9 +70,16 @@ func Start() {
 }
 
 func GetTopics(page int, amount int) []Post {
-	lista := db.posts_by_parent.List("root", page*amount, amount)
-
+	lista, err := db.posts.Find("parent_id", "=", "")
 	resultado := make([]Post, 0, amount)
+
+	if err != nil {
+		resultado = append(resultado, Post{
+			Subject: err.Error(),
+		})
+		return resultado
+	}
+
 	for _, id := range lista {
 		conversa := Post{}
 		db.posts.Get(id, &conversa)
@@ -89,16 +94,13 @@ func CreateTopic(t Post) (string, error) {
 	id := doc.New()
 	t.Time = time.Now()
 
-	err := db.posts.Save(id, t)
+	t.Id = id
+	t.ParentId = ""
+
+	err := db.posts.Add(id, t)
 	if err != nil {
 		return "", err
 	}
-
-	// indexa
-	t.Id = id
-	t.ParentId = "root"
-
-	go t.WriteToIndex()
 
 	return id, err
 }
@@ -114,8 +116,13 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 
 	topic.Replies = make([]Post, 0, TOPIC_PAGE_COUNT)
 
-	lista := db.posts_by_parent.List(topic_id, int(fromPage)*TOPIC_PAGE_COUNT, TOPIC_PAGE_COUNT)
+	lista, err := db.posts.Find("parent_id", "=", topic_id)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("could not read this topic. dunno why.")
+	}
 
+	// TODO
 	for _, reply_id := range lista {
 		mensagem := Post{}
 		db.posts.Get(reply_id, &mensagem)
@@ -127,7 +134,11 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 }
 
 func ReadUserPosts(userId string) ([]Post, error) {
-	lista := db.posts_by_creator.List(userId, 0, 100)
+	lista, err := db.posts.Find("creator_id", "=", userId)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("could not find posts of user")
+	}
 	resultado := make([]Post, 0, 100)
 	for _, id := range lista {
 		mensagem := Post{}
@@ -149,8 +160,7 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 	reply.ParentId = topic_id
 	reply.Time = time.Now()
 
-	err := db.posts.Save(reply.Id, reply)
-	go reply.WriteToIndex()
+	err := db.posts.Add(reply.Id, reply)
 
 	if err != nil {
 		log.Println("error saving post:", err)
