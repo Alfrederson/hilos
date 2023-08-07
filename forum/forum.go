@@ -167,6 +167,7 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 	}
 
 	reply.Id = doc.New()
+
 	reply.ParentId = topic_id
 	reply.Time = time.Now()
 
@@ -184,7 +185,7 @@ func ReplyTopic(topic_id string, reply Post) (string, error) {
 
 	status.PubPost(&reply)
 
-	log.Printf("%s replied to %s\n", reply.Creator, reply.ParentId)
+	log.Printf("%s (%s) replied to %s\n", reply.Creator, reply.IP, reply.ParentId)
 
 	return reply.Id, nil
 }
