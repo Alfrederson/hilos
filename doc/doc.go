@@ -323,6 +323,8 @@ func (d *DocDB) RebuildIndex() {
 	for _, index := range d.indexable.ObjectIndex() {
 		d.conn.Debug().Exec("CREATE INDEX idx_" + index + " ON docs((data->>'$." + index + "'))")
 	}
+
+	d.conn.Debug().Exec("UPDATE docs SET data = JSON_SET(COALESCE(data, '{}'), '$.parent_id', '') WHERE data->>'$.parent_id' IS NULL")
 	// o tempo todo era só ter feito isso
 	//CREATE INDEX idx_postal_code ON employees((address->>'$.postalCode'));
 }
