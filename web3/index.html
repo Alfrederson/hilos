@@ -6,7 +6,6 @@
 {{ range $index, $topic := .Topics }}
     {{ template "partials/topic" (m "Post" $topic "Identity" $.Identity) }}
 {{ end}}
-
 {{if eq .Identity.Powers 95}}
     <div id="new-topic"></div>
     {{template "partials/createtopic" .}}

@@ -1,0 +1,21 @@
+<nav class="navbar navbar-light text-dark mb-3 p-0 sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand mb-0 h1 text-dark" href="/">🧵 HILOS</a>
+        <span class="nav-item">
+            <a class="nav-link" href="/chat">🚽 Chat</a>
+        </span>
+        {{ if eq .Identity.Powers 95}}
+            <span class="nav-item">
+                <a class="nav-link" href="/cop/reports">📣 Reports</a>
+            </span>
+            <span class="nav-item">
+                <a class="nav-link" href="/cop/bans">🔨 Bans</a>
+            </span>
+        {{ end }}
+        <span class="navbar nav-item">
+            <a class="nav-link" href="/by/{{ .Identity.Id }}">
+            {{ .Identity.Name }} {{if eq .Identity.Powers 95}} 👮‍♂️ {{end}}
+            </a>
+        </span>
+    </div>
+</nav>

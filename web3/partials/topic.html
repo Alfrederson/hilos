@@ -1,5 +1,5 @@
 <div class="p-1" hx-target="this" hx-swap="outerHTML">
-    <div class="card" style="width:fit-content;">
+    <div class="card br-0" style="width:fit-content;">
         <div class="card-header pb-0 pt-0 pl-1">
             <p class="badge p-0 mb-0">
                 <a href="/by/{{ .Post.CreatorId }}" class="text-dark">{{ .Post.Creator }}</a>
@@ -14,6 +14,9 @@
                         {{else}}
                             <button class="btn btn-sm btn-link" hx-put="/visualbasic.exe/post/{{.Post.Id}}/freeze">🔒freeze</button>
                         {{end}}
+                    {{end}}
+                    {{if not .Post.Frozen}}
+                        <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/flag">🚩report</button>
                     {{end}}
                 </span>
             </p>

@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: duas funções copi-coladas.
-func FreezePost(c echo.Context) error {
+func Cop_FreezePost(c echo.Context) error {
 	post_id := c.Param("post_id")
 	identity := whoami(c)
 
@@ -35,7 +35,7 @@ func FreezePost(c echo.Context) error {
 	))
 }
 
-func UnfreezePost(c echo.Context) error {
+func Cop_UnfreezePost(c echo.Context) error {
 	post_id := c.Param("post_id")
 	identity := whoami(c)
 

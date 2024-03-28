@@ -54,13 +54,10 @@ func Nuke() {
 	db.reports.RebuildIndex()
 }
 func Start() {
-	db.posts = doc.Create("posts.db")
-	db.posts.UsingIndexable(&Post{})
+	db.posts = doc.Create("posts.db", &Post{})
+	db.reports = doc.Create("reports.db", &Report{})
 
-	db.reports = doc.Create("reports.db")
-	db.reports.UsingIndexable(&Report{})
-
-	db.status = doc.Create("status.db")
+	db.status = doc.Create("status.db", nil)
 
 	db.status.Get("lastPosts", &status.LastPosts)
 
@@ -108,7 +105,7 @@ func CreateTopic(t Post) (string, error) {
 	t.Id = id
 	t.ParentId = ""
 
-	err := db.posts.Add(id, t)
+	err := db.posts.Add(id, &t)
 	if err != nil {
 		return "", err
 	}
@@ -120,8 +117,7 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 	topic := Post{}
 
 	if err := db.posts.Get(topic_id, &topic); err != nil {
-		log.Println("error reading topic ", err)
-		return nil, errors.New("error reading topic. database dead or topic doesn't exist.")
+		return nil, errors.New("error reading topic. database dead or topic doesn't exist")
 	}
 	topic.Id = topic_id
 
@@ -186,7 +182,7 @@ func ReplyTopic(topic *Post, reply Post) (string, error) {
 	reply.ParentId = topic.Id
 	reply.Time = time.Now()
 
-	err := db.posts.Add(reply.Id, reply)
+	err := db.posts.Add(reply.Id, &reply)
 
 	if err != nil {
 		log.Println("error saving post:", err)
@@ -212,6 +208,22 @@ func ReplyTopic(topic *Post, reply Post) (string, error) {
 func RewritePost(id string, rewrite *Post) error {
 	if err := db.posts.Save(id, rewrite); err != nil {
 		log.Println("error editing post: ", err)
+		return err
+	}
+	return nil
+}
+
+// reportar um post.
+func FlagPost(id string, report *Report) error {
+	// post já foi reportado?
+	if db.reports.Exists(id) {
+		return errors.New("post was already reported, sir")
+	}
+	if !db.posts.Exists(id) {
+		return errors.New("no such post, sir")
+	}
+	if err := db.reports.Add(id, report); err != nil {
+		log.Println("error reporting post: ", err)
 		return err
 	}
 	return nil

@@ -40,7 +40,7 @@
         </style>
     </head>
     <body>
-        {{template "partials/header" .}}
+        {{template "layout/header" .}}
         <div class="container" style="max-width:768px">
             {{embed}}
             {{if .Elapsed}} <p class="badge text-dark">{{.Elapsed}}</p> {{end}}

@@ -25,14 +25,6 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-type WebConfig struct {
-	Prefix string
-}
-
-var web = WebConfig{
-	Prefix: "thread.docx",
-}
-
 func Start() {
 	e := echo.New()
 
@@ -46,7 +38,6 @@ func Start() {
 	e404 := func(c echo.Context) error {
 		return c.String(404, "not found")
 	}
-
 	ç := func(c echo.Context) error {
 		log.Println(c.RealIP(), " looking for ", c.Request().RequestURI)
 		return c.String(200, "🤡")
@@ -59,21 +50,25 @@ func Start() {
 		return c.String(200, "User-agent: *\nDisallow:")
 	})
 	e.GET("/admin.php", ç)
-	e.GET("/wp-admin/", ç)
+	e.GET("/wp-admin", ç)
 	e.GET("/.env", ç)
 
 	e.GET("/", Index)
+	e.GET("/chat", Chat)
 	// View a thread/topic/post whatever
 	e.GET("/:topic_id", ViewTopic)
-
 	// View the last post
 	e.GET("/new", ViewLastPost)
 
 	// view all posts by a user
-	e.GET("/by/:user_id", ViewByUserId)
-
+	e.GET("/by/:user_id", ViewUserPosts)
 	// view a single post
 	e.GET("/post/:post_id", ViewSinglePost)
+
+	// view all reports
+	e.GET("/cop/reports", Cop_ViewReports)
+	// view all bans
+	e.GET("/cop/bans", Cop_ViewBans)
 
 	// creates a new identity
 	e.GET("/newidentity.exe", func(c echo.Context) error {
@@ -86,7 +81,6 @@ func Start() {
 		return c.String(http.StatusOK, encoded)
 	})
 	e.GET("/godmode.exe", func(c echo.Context) error {
-		return nil
 		i := identity.New()
 		i.Powers = 95
 		i.Sign()
@@ -138,7 +132,6 @@ func Start() {
 		user := whoami(c)
 		return c.String(http.StatusOK, fmt.Sprint(user.Id, user.Name))
 	})
-
 	// isso era pra mandar só JSON, mas agora manda HTML.
 	// se eu quiser fazer um app, vou precisar voltar pra teoria do json.
 	api := e.Group("visualbasic.exe")
@@ -154,12 +147,10 @@ func Start() {
 	// view a single topic
 	api.GET("/json/post/:topic_id", func(c echo.Context) error {
 		topic_id := c.Param("topic_id")
-
 		resultado, err := forum.ReadPost(topic_id)
 		if err != nil {
 			return c.String(http.StatusBadRequest, err.Error())
 		}
-
 		return c.JSON(http.StatusOK, resultado)
 	})
 
@@ -205,18 +196,19 @@ func Start() {
 	api.GET("/post/:post_id/edit", FormEditPost)
 	api.PUT("/post/:post_id", EditPost)
 
-	// super estranho, mas ok.
+	// reportar um post
 	api.GET("/post/:post_id/flag", FormFlagPost)
-	api.POST("/post/:post_id/flag", EditPost)
+	api.POST("/post/:post_id/flag", FlagPost)
 
 	// reply a thread
 	api.POST("/post/:topic_id", ReplyThread)
 
 	// freeze/unfreeze a post
-	api.PUT("/post/:post_id/freeze", FreezePost)
-	api.PUT("/post/:post_id/unfreeze", UnfreezePost)
+	api.PUT("/post/:post_id/freeze", Cop_FreezePost)
+	api.PUT("/post/:post_id/unfreeze", Cop_UnfreezePost)
 
-	if err := e.Start(":3000"); err != nil {
+	// hardcoded porque é a única porta do raspberry pi que não está quebrada
+	if err := e.Start(":8999"); err != nil {
 		panic(err)
 	}
 }

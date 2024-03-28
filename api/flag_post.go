@@ -4,6 +4,7 @@ import (
 	"hilos/forum"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -28,16 +29,30 @@ func FormFlagPost(c echo.Context) error {
 }
 
 func FlagPost(c echo.Context) error {
+	identity := whoami(c)
 	post_id := c.Param("post_id")
-	reportado, err := forum.ReadPost(post_id)
-	log.Println(err)
-	if err != nil {
-		return c.HTML(200, "WTF")
+	type Report struct {
+		Message string `json:"message" form:"message"`
 	}
+	report := Report{}
+	if err := c.Bind(&report); err != nil {
+		log.Println(err)
+		return c.String(http.StatusBadRequest, "ya dun guf'd")
+	}
+	err := forum.FlagPost(
+		post_id,
+		&forum.Report{
+			PostID:    post_id,
+			Message:   report.Message,
+			IP:        identity.IP,
+			CreatorID: identity.Id,
+			Time:      time.Now(),
+		},
+	)
+	log.Println("reportado: ", post_id)
 	return c.HTML(200, RenderTemplate(
-		"partials/post",
-		R{
-			"Post": reportado,
+		"partials/reported", R{
+			"Error": err,
 		},
 	))
 }

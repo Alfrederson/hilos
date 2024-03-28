@@ -37,19 +37,18 @@ func GenerateId(length int) string {
 	return string(randomBytes)
 }
 
-var db *gorm.DB
-
 type Doc struct {
-	CreatedAt time.Time `gorm:"created_at"`
-	UpdatedAt time.Time `gorm:"updated_at"`
+	CreatedAt time.Time `json:"created_at" gorm:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`
 
-	Path string `gorm:"primaryKey"`
+	Path string `json:"path" gorm:"primaryKey"`
 	Data datatypes.JSON
 }
 
 type Indexable = interface {
-	ReadField(string) (string, error)
-	Indices() []string
+	IndexTable() interface{}
+	IndexedFields() interface{}
+	ObjectIndex() []string
 }
 
 type DocumentData map[string]interface{}
@@ -74,6 +73,7 @@ const (
 )
 
 type DocDB struct {
+	Name      string
 	conn      *gorm.DB
 	mutex     sync.Mutex
 	txMutex   sync.Mutex
@@ -85,28 +85,19 @@ func New(parts ...interface{}) string {
 	if len(parts) == 0 {
 		return GenerateId(16)
 	}
-	// Convert each argument to a string
 	strParts := make([]string, len(parts))
 	for i, part := range parts {
 		strParts[i] = fmt.Sprint(part)
 	}
-
-	// Join the parts with slashes
 	joined := strings.Join(strParts, "/")
-
-	// Generate a unique ID (example: using time.Now().UnixNano())
-	generatedID := GenerateId(10) // Replace with your actual generated ID logic
-
-	// Append the generated ID to the joined string
+	generatedID := GenerateId(10)
 	result := fmt.Sprintf("%s/%s", joined, generatedID)
-
 	return result
 }
 
 func (db *DocDB) Save(path string, object interface{}) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
-
 	bytes, err := json.Marshal(object)
 	if err != nil {
 		log.Println(err)
@@ -119,7 +110,6 @@ func (db *DocDB) Save(path string, object interface{}) error {
 	}
 	log.Println("rewriting " + path)
 	db.conn.Save(&doc)
-
 	return nil
 }
 
@@ -137,31 +127,19 @@ func (db *DocDB) Add(path string, object interface{}) error {
 		log.Println(err)
 		return errors.New("invalid object")
 	}
-	db.conn.Exec("INSERT INTO docs(path,data,created_at,updated_at) VALUES(?,?,?,?)", path, string(bytes), time.Now(), time.Now())
-
-	/*
-		CREATE TABLE IF NOT EXISTS t_` + v + ` (
-			created_at TIME,
-			key TEXT PRIMARY KEY,
-			val TEXT
-		);
-		CREATE INDEX IF NOT EXISTS idx_val_` + v + ` ON t_` + v + `(val);`
-	*/
-
-	// indexar...
-	if thing, ok := object.(Indexable); !ok {
-		log.Println("thing is not indexable.")
-	} else {
-		for _, v := range thing.Indices() {
-			val, err := thing.ReadField(v)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			db.conn.Exec("INSERT INTO t_"+v+"(created_at,key,val) VALUES(?,?,?)", time.Now(), val, path)
-		}
-	}
+	// grava o documento...
+	db.conn.Debug().Exec("INSERT INTO docs(path,data,created_at,updated_at) VALUES(?,?,?,?)", path, string(bytes), time.Now(), time.Now())
 	return nil
+}
+
+func (db *DocDB) Exists(path string) bool {
+	type Path struct {
+		Path string `gorm:"primaryKey"`
+	}
+	tx := db.conn.Table("docs").First(&Path{}, &Path{
+		Path: path,
+	})
+	return tx.Error == nil
 }
 
 func (db *DocDB) Get(path string, object interface{}) error {
@@ -172,45 +150,39 @@ func (db *DocDB) Get(path string, object interface{}) error {
 	if result.Path == "" {
 		return errors.New("document no found: " + path)
 	}
-	json.Unmarshal(result.Data, object)
+	if object != nil {
+		json.Unmarshal(result.Data, object)
+	}
 	return nil
 }
 
 func (db *DocDB) Delete(path string) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
-
 	db.conn.Delete(path)
 }
 
-// holy fuck
-// como agente faz pra ver tudo em ordem cronológica decrescente?
-func (db *DocDB) List(path string, from int, limit int) []string {
-	if db.Type == TYPE_INDEX {
-		type Doc struct {
-			Data string
-		}
-		docs := make([]Doc, 0, 10)
-		db.conn.Where("path = ?", path).Offset(from).Limit(limit).Find(&docs)
-		list := make([]string, 0, 10)
-		for _, doc := range docs {
-			list = append(list, doc.Data[1:len(doc.Data)-1])
-		}
-		return list
-	} else {
-		list := []string{"list operation can only be used on indices"}
-		return list
-	}
-}
-
-// Retorna o JSON de dentro dos objectos, ao invés de retornar os próprios objectos.
-func (db *DocDB) FindLastUpdated(field string, op string, value string, page int, perPage int) ([]string, error) {
-	var stuff = make([]string, 0, page)
+// Pega os últimos perPage documentos da página page por ordem de atualização
+func (db *DocDB) GetLastUpdated(page int, perPage int) ([]string, error) {
+	var stuff = make([]string, 0, perPage)
 	db.conn.
 		Table("docs").
 		Select("data").
-		Joins("INNER JOIN t_"+field+" ON docs.path = t_"+field+".val").
-		Where("t_"+field+".key "+op+" ?", value).
+		Offset(page * perPage).
+		Limit(perPage).
+		Order("docs.updated_at DESC").
+		Find(&stuff)
+	return stuff, nil
+}
+
+// Retorna o JSON de dentro dos objectos, ao invés de retornar os próprios objectos.
+func (db *DocDB) FindLastUpdated(field string, op string, value any, page int, perPage int) ([]string, error) {
+	// Where("data->>'$."+field+"' = ?", value).
+	var stuff = make([]string, 0, perPage)
+	db.conn.
+		Table("docs").
+		Select("data").
+		Where("data->>'$."+field+"' "+op+" ?", value).
 		Offset(perPage * page).
 		Limit(perPage).
 		Order("docs.updated_at DESC").
@@ -218,46 +190,36 @@ func (db *DocDB) FindLastUpdated(field string, op string, value string, page int
 	return stuff, nil
 }
 
-func (db *DocDB) FindLast(field string, op string, value string, page int, perPage int) ([]string, error) {
-	/*
-		SELECT data
-		FROM docs
-		WHERE path IN
-			(SELECT val
-			 FROM t_parent_id
-			 WHERE key = "FefyBU41yfkcgdu7")
-		OFFSET page*perPage
-		LIMIT perPage
-		ORDER BY updated_at DESC;
-	*/
-	var stuff = make([]string, 0, page)
-	db.conn.
+func (db *DocDB) FindLast(field string, op string, value any, page int, perPage int) ([]string, error) {
+	var stuff = make([]string, 0, perPage)
+	db.conn.Debug().
 		Table("docs").
 		Select("data").
-		Joins("INNER JOIN t_"+field+" ON docs.path = t_"+field+".val").
-		Where("t_"+field+".key "+op+" ?", value).
-		Offset(perPage * page).
+		Where("data->>'$."+field+"' "+op+" ?", value).
+		Offset(page * perPage).
 		Limit(perPage).
 		Order("docs.created_at DESC").
 		Find(&stuff)
-
 	return stuff, nil
 }
 
 func (db *DocDB) Find(field string, op string, value string, page int, perPage int) ([]string, error) {
-	if db.indexable == nil {
-		return nil, errors.New("db does not have an index")
-	}
+	//SELECT * FROM employees WHERE address->>'$.postalCode' = '60611';
 	type Entry struct {
-		Key string
-		Val string
+		Path string
 	}
-	entries := make([]Entry, 0, perPage)
-
-	db.conn.Table("t_"+field).Where("key "+op+" ?", value).Offset(page * perPage).Limit(perPage).Find(&entries)
-	result := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		result = append(result, entry.Val)
+	docs := make([]Entry, 0, perPage)
+	// INJECTION!!!
+	db.conn.Debug().
+		Table("docs").
+		Select("path").
+		Where("data->>'$."+field+"' = ?", value).
+		Offset(page * perPage).
+		Limit(perPage).
+		Find(&docs)
+	result := make([]string, 0, len(docs))
+	for _, entry := range docs {
+		result = append(result, entry.Path)
 	}
 	return result, nil
 }
@@ -293,90 +255,79 @@ func Rollback(group ...*DocDB) {
 	}
 }
 
-func Create(file string) *DocDB {
+func Create(file string, indexable Indexable) *DocDB {
 	conn := sqlite.Open(DOCDB_PATH + file)
 
 	result := DocDB{
-		Type: TYPE_COLLECTION,
+		Name:      file,
+		Type:      TYPE_COLLECTION,
+		indexable: indexable,
 	}
 	var err error
 
-	result.conn, err = gorm.Open(conn, &gorm.Config{})
+	result.conn, err = gorm.Open(conn, &gorm.Config{
+		//Logger: logger.Default.LogMode(logger.Info),
+	})
 	// result.conn.Exec("PRAGMA journal_mode = WAL;")
 	if err != nil {
 		panic("não consegui criar instancia do docdb")
 	}
 	result.conn.AutoMigrate(&Doc{})
-
 	return &result
 }
 
-// Isso tem que ser um método dentro do DocDB que aceite como parâmetro os campos usados pra indexação.
-/*
-	ex: db.CreateIndex(Campos{"creator_id","parent_id"})
-
-	- isso vai percorrer Campos{...} criando uma tabela de índice pra cada valor.
-	- sempre que um documento for salvo, ele vai chamar um método dentro do struct chamado Get("creator_id") ou Get("parent_id"), que vai retornar o valor I.
-	- ele vai então criar uma entrada na tabela correspondente com aquele valor e o ID do documento.
-
-*/
-
-func (d *DocDB) UsingIndexable(i Indexable) {
-	log.Println("Using indexable")
-	for _, v := range i.Indices() {
-		log.Println("index on field:", v)
-		query := `
-		CREATE TABLE IF NOT EXISTS t_` + v + ` (
-			id INTEGER NOT NULL PRIMARY KEY,
-			created_at TIME,
-			key TEXT,
-			val TEXT
-		);
-		CREATE INDEX IF NOT EXISTS idx_key_` + v + ` ON t_` + v + `(key);
-		CREATE INDEX IF NOT EXISTS idx_val_` + v + ` ON t_` + v + `(val);`
-		d.conn.Exec(query)
+func dropAllIndexes(db *gorm.DB) error {
+	var tables []string
+	if err := db.Raw("SELECT name FROM sqlite_master WHERE type='table'").Pluck("name", &tables).Error; err != nil {
+		return err
 	}
-	d.indexable = i
+	for _, table := range tables {
+		var indexes []struct {
+			Name string
+		}
+		if err := db.Raw(fmt.Sprintf("PRAGMA index_list(%s)", table)).Scan(&indexes).Error; err != nil {
+			return err
+		}
+		for _, index := range indexes {
+			if err := db.Exec(fmt.Sprintf("DROP INDEX %s", index.Name)).Error; err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (d *DocDB) RebuildIndex() {
-	if d.indexable == nil {
-		log.Println("db has no index")
+	log.Println("rebuilding index for ", d.Name)
+	// drop indices
+	var tableNames []string
+	log.Println("dropando indices sistema antigo...")
+	result := d.conn.Raw("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 't_%'").Scan(&tableNames)
+	if result.Error != nil {
+		panic(result.Error)
 	}
-	log.Println("dropping indices...")
-	for _, v := range d.indexable.Indices() {
-		query := "DROP INDEX idx_key_" + v + "; DROP INDEX idx_val_" + v + "; DROP TABLE t_" + v + ";"
-		d.conn.Exec(query)
-	}
-	log.Println("rebuilding indices...")
-	d.UsingIndexable(d.indexable)
-	offset := 0
-	type Thing map[string]interface{}
-	for {
-		docs := make([]Doc, 0, 10)
-		d.conn.Offset(offset).Limit(10).Find(&docs)
-		if len(docs) == 0 {
-			log.Println("done")
-			break
+	for _, tableName := range tableNames {
+		result := d.conn.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName))
+		if result.Error != nil {
+			panic(result.Error)
 		}
-		for _, doc := range docs {
-			t := Thing{}
-			err := json.Unmarshal(doc.Data, &t)
-			if err != nil {
-				log.Println("failed to unmarshal " + doc.Path)
-				continue
-			}
-			// pra cada campo indexado...
-			for _, field := range d.indexable.Indices() {
-				d.conn.Exec("INSERT INTO t_"+field+"(created_at,key,val) VALUES(?,?,?);", doc.CreatedAt, t[field], doc.Path)
-			}
-		}
-		offset += 10
+		fmt.Printf("dropped %s \n", tableName)
 	}
+	indexModel := d.indexable.IndexTable()
+	if err := d.conn.Migrator().DropTable(indexModel); err != nil {
+		log.Println("erro dropando indice: ", err)
+	}
+	// dropa todos os índices
+	dropAllIndexes(d.conn)
+	// recria eles
+	for _, index := range d.indexable.ObjectIndex() {
+		d.conn.Debug().Exec("CREATE INDEX idx_" + index + " ON docs((data->>'$." + index + "'))")
+	}
+	// o tempo todo era só ter feito isso
+	//CREATE INDEX idx_postal_code ON employees((address->>'$.postalCode'));
 }
 
 func init() {
 	DOCDB_PATH = os.Getenv("DOCDB_PATH")
 	log.Println("initializing docdb, path = ", DOCDB_PATH)
-
 }

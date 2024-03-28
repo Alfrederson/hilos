@@ -1,12 +1,11 @@
-<form class="container" hx-post="/visualbasic.exe/{{ .Post.Id }}/flag" hx-target="this" hx-swap="outerHTML">
+<form class="container" hx-post="/visualbasic.exe/post/{{ .Post.Id }}/flag" hx-target="this" hx-swap="outerHTML">
     <p style="white-space: pre-line;">
         {{.Post.Subject}}
         {{.Post.Content}}
     </p>
     <p>Why should this post be flagged?</p>
-
     <div class="form-group mb-3">
-        <input type="text" class="form-control mb-1 p-1" name="reason" placeholder="...">
+        <input type="text" class="form-control mb-1 p-1" name="message" placeholder="...">
     </div>
     <div class="btn-group" role="group">
         <button type="submit" class="badge btn bg-info text-dark">Flag</button>
