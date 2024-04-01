@@ -1,12 +1,11 @@
-<div class="ticker pb-0 overflow-auto text-nowrap" hx-get="/new" hx-trigger="every 2s">
-    {{ range $index, $post := .LastPosts }}
-    <a href="/{{ $post.Id }}">{{ crop $post.Content }}</a> -
-    {{ end }}
+{{ template "partials/last_posts" .}}
+<div class="container mb-3" style="max-width:768px">
+    {{ range $index, $topic := .Topics }}
+        {{ template "partials/post" (m "Post" $topic "Identity" $.Identity) }}
+    {{ end}}
+    {{if eq .Identity.Powers 95}}
+        <div id="new-topic"></div>
+        {{template "forms/create_topic" .}}
+    {{end}}
 </div>
-{{ range $index, $topic := .Topics }}
-    {{ template "partials/topic" (m "Post" $topic "Identity" $.Identity) }}
-{{ end}}
-{{if eq .Identity.Powers 95}}
-    <div id="new-topic"></div>
-    {{template "partials/createtopic" .}}
-{{end}}
+

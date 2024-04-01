@@ -30,16 +30,13 @@ func Cop_FreezePost(c echo.Context) error {
 
 func Cop_UnfreezePost(c echo.Context) error {
 	post_id := c.Param("post_id")
-	identity := whoami(c)
+	s := session(c)
 
 	original, err := forum.ReadPost(post_id)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "no post "+post_id)
 	}
-	if identity.Powers != 95 {
-		return c.String(http.StatusForbidden, "you can't freeze posts")
-	}
-	log.Printf("%s unfreezing %s's post", identity.Name, original.Creator)
+	log.Printf("%s unfreezing %s's post", s.id.Name, original.Creator)
 
 	original.Frozen = false
 
@@ -49,7 +46,7 @@ func Cop_UnfreezePost(c echo.Context) error {
 	return c.HTML(http.StatusAccepted, RenderTemplate(
 		"partials/post", R{
 			"Post":     original,
-			"Identity": identity,
+			"Identity": s.id,
 		},
 	))
 }

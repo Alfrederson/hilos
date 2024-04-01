@@ -157,7 +157,9 @@ func (db *DocDB) Get(path string, object interface{}) error {
 func (db *DocDB) Delete(path string) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
-	db.conn.Delete(path)
+	db.conn.Delete(&Doc{
+		Path: path,
+	})
 }
 
 // Pega os últimos perPage documentos da página page por ordem de atualização
@@ -208,7 +210,7 @@ func (db *DocDB) Find(field string, op string, value string, page int, perPage i
 	}
 	docs := make([]Entry, 0, perPage)
 	// INJECTION!!!
-	db.conn.Debug().
+	db.conn.
 		Table("docs").
 		Select("path").
 		Where("data->>'$."+field+"' = ?", value).

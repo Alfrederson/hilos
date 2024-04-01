@@ -36,18 +36,6 @@ func onlyCopsAllowed(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func identifier(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		s := session(c)
-		// coloca o id na sessão a partir do cookie...
-		s.id = whoami(c)
-		// aqui a gente vai carregar algumas coisas do arquivo,
-		// tipo mensagens privadas e tal. eu acho.
-
-		return next(c)
-	}
-}
-
 func Start() {
 	e := echo.New()
 
@@ -73,7 +61,12 @@ func Start() {
 	e.GET("/wp-admin", ç)
 	e.GET("/.env", ç)
 
-	root := e.Group("", identifier)
+	root := e.Group("", sessionStarter, func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Response().Header().Set("Encoding", "text/html; charset=UTF-8")
+			return next(c)
+		}
+	})
 
 	root.GET("/testCop", func(c echo.Context) error {
 		return c.String(200, "You're a cop!")
@@ -105,10 +98,6 @@ func Start() {
 		return c.String(http.StatusOK, fmt.Sprintf("forum nuking took %v ", time.Since(start)))
 	})
 	cop.GET("/reindex.exe", func(c echo.Context) error {
-		i := whoami(c)
-		if i.Powers != 95 {
-			return e404(c)
-		}
 		start := time.Now()
 		forum.RebuildIndex()
 		return c.String(http.StatusOK, fmt.Sprintf("took %v ", time.Since(start)))
@@ -128,6 +117,7 @@ func Start() {
 	// freeze/unfreeze a post
 	cop.PUT("/post/:post_id/freeze", Cop_FreezePost)
 	cop.PUT("/post/:post_id/unfreeze", Cop_UnfreezePost)
+	cop.DELETE("/post/:post_id", Cop_PrunePost)
 
 	// creates a new identity
 	root.GET("/newidentity.exe", func(c echo.Context) error {
@@ -163,7 +153,7 @@ func Start() {
 	})
 	// isso era pra mandar só JSON, mas agora manda HTML.
 	// se eu quiser fazer um app, vou precisar voltar pra teoria do json.
-	api := e.Group("visualbasic.exe", identifier)
+	api := e.Group("visualbasic.exe", sessionStarter)
 
 	// view all topics
 	api.GET("/json/:page", func(c echo.Context) error {

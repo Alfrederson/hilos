@@ -1,15 +1,17 @@
-<div class="p-1" hx-target="this" hx-swap="outerHTML">
-    <div class="container" style="width:fit-content;">
+<div class="p-1">
+    <div class="container">
         {{ range $index, $report := .Reports }}
-            <div>
-                <div class="alert alert-light p-1 m-1">
+            <div hx-target="this" hx-swap="innerHTML" class="alert alert-light p-1 mx-1 my-2">
+                <p class="mx-2 mb-0">
                     {{ $report.Message }}
-                    <p>
-                        submitted by <a href="/by/{{ $report.CreatorID }}">{{ $report.CreatorName }}</a>
-                    </p>
+                </p>
+                <p class="badge text-dark">
+                    submitted by <a href="/by/{{ $report.CreatorID }}">{{ $report.CreatorName }}</a>
+                </p>
+                {{ if $report.OriginalPost}}
                     {{template "partials/post" (m "Post" $report.OriginalPost "Identity" $.Identity)}}
-                    <button class="btn btn-sm btn-link" hx-put="/cop/report/{{ $report.PostID }}/dismiss">dismiss report</button>                    
-                </div>
+                {{ end }}
+                <button class="btn btn-sm btn-link" hx-post="/cop/reports/{{ $report.PostID }}/dismiss">dismiss report</button>                    
             </div>
         {{ end }}
     </div>

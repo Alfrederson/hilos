@@ -3,8 +3,10 @@
         <input type="text" class="form-control mb-1 p-1" name="subject" placeholder="..." value="{{ .Subject }}">
         <textarea class="form-control p-1" placeholder="..." name="content">{{ .Content }}</textarea>
     </div>
-    <div class="btn-group" role="group">
-        <button type="submit" class="badge btn bg-info text-dark">Save</button>
-        <button type="submit" class="badge btn bg-danger text-dark" hx-get="/post/{{ .Id }}">Cancel</button>
-    </div>
+    <span class="btn-group p-0" role="group">
+        {{if or (eq .Identity.Powers 95) (eq .Identity.Id .Post.CreatorId)}}
+        <button type="submit" class="btn btn-ghost btn-sm">✅ save</button>
+        {{end}}
+        <button type="submit" class="btn btn-ghost btn-sm" hx-get="/post/{{ .Id }}">❌ Cancel</button>
+    </span>
 </form>

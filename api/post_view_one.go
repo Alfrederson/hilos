@@ -17,7 +17,7 @@ func ViewSinglePost(c echo.Context) error {
 	return c.HTML(200, RenderTemplate(
 		"partials/post",
 		R{
-			"Identity": s.id.Id,
+			"Identity": s.id,
 			"Post":     resultado,
 		},
 	))

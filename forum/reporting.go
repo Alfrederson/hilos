@@ -24,31 +24,6 @@ func (r *Report) ObjectIndex() []string {
 	}
 }
 
-// func (r *Report) IndexTable() interface{} {
-// 	type Indices struct {
-// 		PostID    string `json:"post_id" gorm:"index:idx_post_id"`
-// 		CreatorID string `json:"creator_id" gorm:"index:idx_creator_id"`
-// 		IP        string `json:"ip" gorm:"index:idx_ip"`
-// 		Processed bool   `json:"processed" gorm:"index:idx_processed"`
-// 	}
-// 	return Indices{}
-// }
-
-// func (r *Report) IndexedFields() interface{} {
-// 	type Fields struct {
-// 		PostID    string `json:"post_id" gorm:"index:idx_post_id"`
-// 		CreatorID string `json:"creator_id" gorm:"index:idx_creator_id"`
-// 		IP        string `json:"ip" gorm:"index:idx_ip"`
-// 		Processed bool   `json:"processed" gorm:"index:idx_processed"`
-// 	}
-// 	return Fields{
-// 		PostID:    r.PostID,
-// 		CreatorID: r.CreatorID,
-// 		IP:        r.IP,
-// 		Processed: r.Processed,
-// 	}
-// }
-
 // reportar um post.
 func ReportPost(id string, report *Report) error {
 	// post já foi reportado?

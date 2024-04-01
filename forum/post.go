@@ -90,3 +90,24 @@ func RewritePost(id string, rewrite *Post) error {
 	}
 	return nil
 }
+
+// os posts vão sumindo aos poucos, recursivamente
+type PruneTask struct {
+	PostID string `json:"post_id"`
+}
+
+func PrunePost(postId string) error {
+	if !db.posts.Exists(postId) {
+		return errors.New("post doesn't exist")
+	}
+	db.posts.Delete(postId)
+	err := db.prunes.Save(postId, &PruneTask{
+		PostID: postId,
+	})
+	if err != nil {
+		log.Println("error issuing prune task: ", err)
+	} else {
+		log.Println("prune task has been issued")
+	}
+	return nil
+}

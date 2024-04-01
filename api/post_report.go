@@ -37,9 +37,9 @@ func FlagPost(c echo.Context) error {
 	report := Report{}
 	if err := c.Bind(&report); err != nil {
 		log.Println(err)
-		return c.String(http.StatusBadRequest, "ya dun guf'd")
+		return c.HTML(http.StatusAccepted, RenderTemplate("alert/error", R{"Message": err}))
 	}
-	err := forum.ReportPost(
+	if err := forum.ReportPost(
 		post_id,
 		&forum.Report{
 			PostID:      post_id,
@@ -49,11 +49,8 @@ func FlagPost(c echo.Context) error {
 			CreatorName: s.id.Name,
 			Time:        time.Now(),
 		},
-	)
-	log.Println("reportado: ", post_id)
-	return c.HTML(200, RenderTemplate(
-		"partials/reported", R{
-			"Error": err,
-		},
-	))
+	); err != nil {
+		return c.HTML(http.StatusAccepted, RenderTemplate("alert/error", R{"Message": err}))
+	}
+	return c.HTML(http.StatusAccepted, RenderTemplate("alert/success", R{"Message": "post reported sir"}))
 }

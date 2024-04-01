@@ -35,7 +35,10 @@ func GetReports() ([]ReportedPost, error) {
 			log.Println(err)
 		}
 		p := Post{}
-		db.posts.Get(r.PostID, &p)
+		if err := db.posts.Get(r.PostID, &p); err != nil {
+			p.Subject = err.Error()
+			p.Content = "(this post was already deleted)"
+		}
 		result = append(result, ReportedPost{
 			Report:       r,
 			OriginalPost: p,

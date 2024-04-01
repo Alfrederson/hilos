@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gofiber/template/html/v2"
@@ -73,6 +74,13 @@ func (p Pugger) Render(w io.Writer, name string, data interface{}, c echo.Contex
 		log.Println(err)
 	}
 	return err
+}
+
+func Success(c echo.Context, message string) error {
+	return c.HTML(http.StatusAccepted, RenderTemplate("alert/success", R{"Message": message}))
+}
+func Error(c echo.Context, message string) error {
+	return c.HTML(http.StatusAccepted, RenderTemplate("alert/error", R{"Message": message}))
 }
 
 // O certo é não fazer isso, hehe.

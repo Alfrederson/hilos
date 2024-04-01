@@ -16,8 +16,8 @@ var db struct {
 	reports *doc.DocDB
 	status  *doc.DocDB
 
+	prunes *doc.DocDB
 	// TODO:
-	// - lista de tópicos a extinguir.
 	// - lista de bans.
 	// - lista de sessões.
 }
@@ -55,6 +55,7 @@ func Start() {
 	db.posts = doc.Create("posts.db", &Post{})
 	db.reports = doc.Create("reports.db", &Report{})
 	db.status = doc.Create("status.db", nil)
+	db.prunes = doc.Create("prunes.db", nil)
 	db.status.Get("lastPosts", &status.LastPosts)
 	// persiste periodicamente os últimos posts...
 	go func() {

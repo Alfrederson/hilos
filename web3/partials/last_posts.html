@@ -1,0 +1,5 @@
+<div class="container-fluid mb-3 w-100">
+{{ range $index, $post := .LastPosts }}
+    <a href="/{{ $post.Id }}">{{ crop $post.Content }}</a>
+{{ end }}
+</div>

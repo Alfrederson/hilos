@@ -47,5 +47,9 @@ func whoami(c echo.Context) *identity.Identity {
 
 func mustHave[T any](c echo.Context, key string) *T {
 	thing := c.Get(key)
-	return thing.(*T)
+	if coisa, ok := thing.(*T); ok {
+		return coisa
+	} else {
+		return nil
+	}
 }

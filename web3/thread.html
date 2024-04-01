@@ -1,11 +1,17 @@
 {{template "partials/crumb" .}}
-    <p style="white-space: pre-line;">{{ .Topic.Content }}</p>
-    {{ range $index, $reply := .Topic.Replies }}
-        {{template "partials/post" (m "Post" $reply "Identity" $.Identity)}}
-    {{ end }}
-    <div id="new-post"></div>
-{{template "partials/paging" .}}
+    <div class="container mb-3" style="max-width:768px">
+        <p class="container" style="white-space: pre-line;">{{ .Topic.Content }}</p>
+        <a class="badge bg-light text-dark" href="/by/{{ .Topic.CreatorId }}">by {{ .Topic.Creator }}~</a>        
+    </div>
 
-{{if not .Topic.Frozen}}
-    {{template "partials/replyform" .}}
-{{end}}
+    <div class="container" style="max-width: 768px;">    
+        {{ range $index, $reply := .Topic.Replies }}
+            {{template "partials/post" (m "Post" $reply "Identity" $.Identity)}}
+        {{ end }}
+        <div id="new-post"></div>
+        {{template "partials/paging" .}}
+
+        {{if not .Topic.Frozen}}
+            {{template "partials/replyform" .}}
+        {{end}}
+    </div>

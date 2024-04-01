@@ -45,22 +45,22 @@ func EditPost(c echo.Context) error {
 	changes := Alteration{}
 	if err := c.Bind(&changes); err != nil {
 		log.Println(err)
-		return c.String(http.StatusBadRequest, "ya dun guf'd")
+		return Error(c, err.Error())
 	}
 	original, err := forum.ReadPost(post_id)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "no post "+post_id)
+		return Error(c, err.Error())
 	}
 	// Tirar aquele lá de cima quando eu descobrir um jeito prático de
 	// exibir os posts...
 	if (original.CreatorId != s.id.Id) && !s.id.CanMod() {
-		return c.String(http.StatusForbidden, "you can't edit someone else's post")
+		return Error(c, "you can't edit someone else's post")
 	}
 	log.Printf("%s editing %s's post", s.id.Name, original.Creator)
 	original.Subject = changes.Subject
 	original.Content = changes.Content
 	if err := forum.RewritePost(post_id, original); err != nil {
-		return c.String(http.StatusInternalServerError, "the forum dun gufd")
+		return Error(c, err.Error())
 	}
 	return c.HTML(http.StatusAccepted, RenderTemplate(
 		"partials/post", R{
