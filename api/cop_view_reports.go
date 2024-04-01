@@ -9,20 +9,16 @@ import (
 )
 
 func Cop_ViewReports(c echo.Context) error {
-	identity := whoami(c)
-	if identity.Powers != 95 {
-		return c.Redirect(451, "/")
-	}
+	s := session(c)
 	reports, err := forum.GetReports()
 	if err != nil {
 		log.Println("error getting reports:", err)
 		return c.String(http.StatusInternalServerError, "the forum dun guf'd")
 	}
-
 	return c.Render(200,
 		"cop/reports",
 		R{
-			"Identity": identity,
+			"Identity": s.id,
 			"Reports":  reports,
 		},
 	)

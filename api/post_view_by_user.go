@@ -8,9 +8,9 @@ import (
 )
 
 func ViewUserPosts(c echo.Context) error {
-	identity := whoami(c)
+	s := session(c)
 	fromPage, _ := strconv.ParseInt(c.QueryParam("p"), 10, 32)
-	topicList, err := forum.ReadUserPosts(c.Param("user_id"), fromPage)
+	topicList, err := forum.ReadPostsByUser(c.Param("user_id"), fromPage)
 	if err != nil {
 		return c.String(400, err.Error())
 	}
@@ -19,7 +19,7 @@ func ViewUserPosts(c echo.Context) error {
 		R{
 			"Topics":    topicList,
 			"LastPosts": forum.Status().LastPosts,
-			"Identity":  identity,
+			"Identity":  s.id,
 		},
 	)
 }

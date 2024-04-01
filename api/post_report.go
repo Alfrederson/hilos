@@ -29,7 +29,7 @@ func FormFlagPost(c echo.Context) error {
 }
 
 func FlagPost(c echo.Context) error {
-	identity := whoami(c)
+	s := session(c)
 	post_id := c.Param("post_id")
 	type Report struct {
 		Message string `json:"message" form:"message"`
@@ -39,14 +39,15 @@ func FlagPost(c echo.Context) error {
 		log.Println(err)
 		return c.String(http.StatusBadRequest, "ya dun guf'd")
 	}
-	err := forum.FlagPost(
+	err := forum.ReportPost(
 		post_id,
 		&forum.Report{
-			PostID:    post_id,
-			Message:   report.Message,
-			IP:        identity.IP,
-			CreatorID: identity.Id,
-			Time:      time.Now(),
+			PostID:      post_id,
+			Message:     report.Message,
+			IP:          s.id.IP,
+			CreatorID:   s.id.Id,
+			CreatorName: s.id.Name,
+			Time:        time.Now(),
 		},
 	)
 	log.Println("reportado: ", post_id)

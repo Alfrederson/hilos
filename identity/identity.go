@@ -105,6 +105,10 @@ func SetSecret(s string) {
 	log.Println("changing secret")
 }
 
+func (i *Identity) CanMod() bool {
+	return i.Powers == 95
+}
+
 func init() {
 	SECRET = os.Getenv("RWT_SECRET")
 	if SECRET == "" {

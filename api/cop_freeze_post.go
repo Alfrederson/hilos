@@ -10,27 +10,20 @@ import (
 
 // TODO: duas funções copi-coladas.
 func Cop_FreezePost(c echo.Context) error {
+	s := session(c)
 	post_id := c.Param("post_id")
-	identity := whoami(c)
-
 	original, err := forum.ReadPost(post_id)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "no post "+post_id)
+		return c.String(http.StatusNotFound, "post "+post_id+" doesn't exist")
 	}
-	if identity.Powers != 95 {
-		return c.String(http.StatusForbidden, "you can't freeze posts")
-	}
-	log.Printf("%s freezing %s's post", identity.Name, original.Creator)
-
 	original.Frozen = true
-
 	if err := forum.RewritePost(post_id, original); err != nil {
 		return c.String(http.StatusInternalServerError, "the forum dun gufd")
 	}
 	return c.HTML(http.StatusAccepted, RenderTemplate(
 		"partials/post", R{
 			"Post":     original,
-			"Identity": identity,
+			"Identity": s.id,
 		},
 	))
 }

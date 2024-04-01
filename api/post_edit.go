@@ -16,19 +16,21 @@ import (
 // - quando o formulário é enviado, envia aquele troço lá.
 
 func FormEditPost(c echo.Context) error {
+	s := session(c)
 	topic_id := c.Param("post_id")
-
-	resultado, err := forum.ReadPost(topic_id)
+	post, err := forum.ReadPost(topic_id)
 	if err != nil {
-		return c.String(http.StatusBadRequest, err.Error())
+		return c.String(http.StatusBadRequest, " post no foundy")
 	}
-
+	if post.CreatorId != s.id.Id && !s.id.CanMod() {
+		return c.String(http.StatusForbidden, " cant edit post, sir")
+	}
 	return c.HTML(200, RenderTemplate(
 		"forms/edit_post",
 		R{
-			"Id":      resultado.Id,
-			"Subject": resultado.Subject,
-			"Content": resultado.Content,
+			"Id":      post.Id,
+			"Subject": post.Subject,
+			"Content": post.Content,
 		},
 	))
 }
@@ -38,37 +40,32 @@ func EditPost(c echo.Context) error {
 		Subject string `json:"subject" form:"subject"`
 		Content string `json:"content" form:"content"`
 	}
+	s := session(c)
 	post_id := c.Param("post_id")
-	identity := whoami(c)
-
 	changes := Alteration{}
 	if err := c.Bind(&changes); err != nil {
 		log.Println(err)
 		return c.String(http.StatusBadRequest, "ya dun guf'd")
 	}
-
 	original, err := forum.ReadPost(post_id)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "no post "+post_id)
 	}
 	// Tirar aquele lá de cima quando eu descobrir um jeito prático de
 	// exibir os posts...
-	if (original.CreatorId != identity.Id) && (identity.Powers != 95) {
+	if (original.CreatorId != s.id.Id) && !s.id.CanMod() {
 		return c.String(http.StatusForbidden, "you can't edit someone else's post")
 	}
-
-	log.Printf("%s editing %s's post", identity.Name, original.Creator)
+	log.Printf("%s editing %s's post", s.id.Name, original.Creator)
 	original.Subject = changes.Subject
 	original.Content = changes.Content
-
 	if err := forum.RewritePost(post_id, original); err != nil {
 		return c.String(http.StatusInternalServerError, "the forum dun gufd")
 	}
-
 	return c.HTML(http.StatusAccepted, RenderTemplate(
 		"partials/post", R{
 			"Post":     original,
-			"Identity": identity,
+			"Identity": s.id,
 		},
 	))
 }

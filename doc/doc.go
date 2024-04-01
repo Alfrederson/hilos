@@ -46,8 +46,6 @@ type Doc struct {
 }
 
 type Indexable = interface {
-	IndexTable() interface{}
-	IndexedFields() interface{}
 	ObjectIndex() []string
 }
 
@@ -312,10 +310,6 @@ func (d *DocDB) RebuildIndex() {
 			panic(result.Error)
 		}
 		fmt.Printf("dropped %s \n", tableName)
-	}
-	indexModel := d.indexable.IndexTable()
-	if err := d.conn.Migrator().DropTable(indexModel); err != nil {
-		log.Println("erro dropando indice: ", err)
 	}
 	// dropa todos os índices
 	dropAllIndexes(d.conn)

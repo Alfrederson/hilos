@@ -7,15 +7,11 @@ import (
 )
 
 func Cop_ViewBans(c echo.Context) error {
-	identity := whoami(c)
-	if identity.Powers != 95 {
-		return c.Redirect(http.StatusUnavailableForLegalReasons, "/")
-	}
-
+	s := session(c)
 	return c.HTML(http.StatusAccepted, RenderTemplate(
 		"cop/bans", R{
 			"Bans":     "nenhum bans",
-			"Identity": identity,
+			"Identity": s.id,
 		},
 	))
 }

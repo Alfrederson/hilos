@@ -44,3 +44,8 @@ func whoami(c echo.Context) *identity.Identity {
 	i.IP = c.RealIP()
 	return i
 }
+
+func mustHave[T any](c echo.Context, key string) *T {
+	thing := c.Get(key)
+	return thing.(*T)
+}

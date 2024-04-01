@@ -9,7 +9,7 @@ import (
 
 func ViewTopic(c echo.Context) error {
 	start := time.Now()
-	identity := whoami(c)
+	s := session(c)
 	var nextPage int64
 	var prevPage int64
 	page := requestedPage(c)
@@ -18,17 +18,15 @@ func ViewTopic(c echo.Context) error {
 	if err != nil {
 		return c.HTML(400, err.Error())
 	}
-
 	if (page+1)*10 < int64(topic.ReplyCount) {
 		nextPage = page + 1
 	}
-
 	return c.Render(200,
 		"thread",
 		R{"Topic": topic,
 			"Title":       topic.Subject,
 			"Description": crop(topic.Content),
-			"Identity":    identity,
+			"Identity":    s.id,
 			"PrevPage":    prevPage,
 			"Page":        page,
 			"NextPage":    nextPage,

@@ -1,51 +1,12 @@
 package forum
 
 import (
+	"encoding/json"
+	"errors"
+	"hilos/doc"
+	"log"
 	"time"
 )
-
-type Report struct {
-	PostID      string    `json:"post_id,omitempty"`
-	Message     string    `json:"message,omitempty"`
-	CreatorID   string    `json:"creator_id"`
-	CreatorName string    `json:"creator_name"`
-	IP          string    `json:"ip,omitempty"`
-	Time        time.Time `json:"time,omitempty"`
-	Processed   bool      `json:"processed"`
-}
-
-func (r *Report) ObjectIndex() []string {
-	return []string{
-		"post_id",
-		"creator_id",
-		"processed",
-	}
-}
-
-func (r *Report) IndexTable() interface{} {
-	type Indices struct {
-		PostID    string `json:"post_id" gorm:"index:idx_post_id"`
-		CreatorID string `json:"creator_id" gorm:"index:idx_creator_id"`
-		IP        string `json:"ip" gorm:"index:idx_ip"`
-		Processed bool   `json:"processed" gorm:"index:idx_processed"`
-	}
-	return Indices{}
-}
-
-func (r *Report) IndexedFields() interface{} {
-	type Fields struct {
-		PostID    string `json:"post_id" gorm:"index:idx_post_id"`
-		CreatorID string `json:"creator_id" gorm:"index:idx_creator_id"`
-		IP        string `json:"ip" gorm:"index:idx_ip"`
-		Processed bool   `json:"processed" gorm:"index:idx_processed"`
-	}
-	return Fields{
-		PostID:    r.PostID,
-		CreatorID: r.CreatorID,
-		IP:        r.IP,
-		Processed: r.Processed,
-	}
-}
 
 // Path é o caminho do post.
 // Creator é a identidade do criador.
@@ -72,23 +33,60 @@ func (p *Post) ObjectIndex() []string {
 	}
 }
 
-func (p *Post) IndexTable() interface{} {
-	type Indices struct {
-		ParentId  string `json:"parent_id" gorm:"index:idx_parent_id"`
-		CreatorId string `json:"creator_id" gorm:"index:idx_creator_id"`
-		IP        string `json:"ip" gorm:"index:idx_ip"`
+func ReadPostsByUser(userId string, fromPage int64) ([]Post, error) {
+	lista, _ := db.posts.FindLast("creator_id", "=", userId, int(fromPage), TOPIC_PAGE_COUNT)
+	posts := make([]Post, 0, TOPIC_PAGE_COUNT)
+	for _, data := range lista {
+		mensagem := Post{}
+		err := json.Unmarshal([]byte(data), &mensagem)
+		if err != nil {
+			log.Println(err)
+		}
+		posts = append(posts, mensagem)
 	}
-	return Indices{}
+	return posts, nil
 }
-func (p *Post) IndexedFields() interface{} {
-	type Fields struct {
-		ParentId  string `json:"parent_id" gorm:"index:idx_parent_id"`
-		CreatorId string `json:"creator_id" gorm:"index:idx_creator_id"`
-		IP        string `json:"ip" gorm:"index:idx_ip"`
+
+func ReadPost(postId string) (*Post, error) {
+	resultado := Post{}
+	if err := db.posts.Get(postId, &resultado); err != nil {
+		return nil, errors.New("could not read post " + postId)
 	}
-	return Fields{
-		ParentId:  p.ParentId,
-		CreatorId: p.CreatorId,
-		IP:        p.IP,
+	return &resultado, nil
+}
+
+func WritePost(topic *Post, post Post) (string, error) {
+	// vê se o tópico existe
+
+	post.Id = doc.New()
+
+	post.ParentId = topic.Id
+	post.Time = time.Now()
+
+	err := db.posts.Add(post.Id, &post)
+
+	if err != nil {
+		log.Println("error saving post:", err)
+		return "", errors.New("couldn't save the post")
 	}
+
+	topic.ReplyCount += 1
+	if err := db.posts.Save(topic.Id, topic); err != nil {
+		log.Println("error incrementing reply count:", err)
+	}
+	status.PubPost(&post)
+	log.Printf("%s (%s) replied to %s\n", post.Creator, post.IP, post.ParentId)
+	return post.Id, nil
+}
+
+// não pode trocar o autor e o parent_id porque
+// teria que reindexar e eu não quero fazer isso.
+// na verdade agora faz meio automático
+// idealmente é pra deixar poder fazer, mas não vai não por enquanto.
+func RewritePost(id string, rewrite *Post) error {
+	if err := db.posts.Save(id, rewrite); err != nil {
+		log.Println("error editing post: ", err)
+		return err
+	}
+	return nil
 }

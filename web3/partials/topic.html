@@ -8,11 +8,11 @@
                     <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/edit">📝edit</button>
                     {{end}}
                     {{if (eq .Identity.Powers 95)}}                                    
-                        <button class="btn btn-sm btn-link" hx-get="/visualbasic.exe/post/{{.Post.Id}}/prune">🧨prune</button>
+                        <button class="btn btn-sm btn-link" hx-get="/cop/post/{{.Post.Id}}/prune">🧨prune</button>
                         {{if .Post.Frozen}}
-                            <button class="btn btn-sm btn-link" hx-put="/visualbasic.exe/post/{{.Post.Id}}/unfreeze">🔓unfreeze</button>
+                            <button class="btn btn-sm btn-link" hx-put="/cop/post/{{.Post.Id}}/unfreeze">🔓unfreeze</button>
                         {{else}}
-                            <button class="btn btn-sm btn-link" hx-put="/visualbasic.exe/post/{{.Post.Id}}/freeze">🔒freeze</button>
+                            <button class="btn btn-sm btn-link" hx-put="/cop/post/{{.Post.Id}}/freeze">🔒freeze</button>
                         {{end}}
                     {{end}}
                     {{if not .Post.Frozen}}
