@@ -67,6 +67,10 @@ func Start() {
 		}
 	})
 
+	root.GET("/ads.txt", func(c echo.Context) error {
+		return c.String(200, "* , *, DIRECT")
+	})
+
 	root.GET("/", Index)
 	root.GET("/welcome", Welcome)
 	root.GET("/chat", Chat)
