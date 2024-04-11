@@ -1,17 +1,26 @@
 <div class="p-1">
     <div class="container">
+        <a class="badge bg-dark" href="?processed=false">🚨 active</a>
+        <a class="badge bg-dark" href="?processed=true">💤 stale</a>        
+        {{ template "cop/report_paging" .}}
         {{ range $index, $report := .Reports }}
-            <div hx-target="this" hx-swap="innerHTML" class="alert alert-light p-1 mx-1 my-2">
-                <p class="mx-2 mb-0">
-                    {{ $report.Message }}
-                </p>
-                <p class="badge text-dark">
-                    submitted by <a href="/by/{{ $report.CreatorID }}">{{ $report.CreatorName }}</a>
-                </p>
+            <div hx-target="this" hx-swap="innerHTML" class="p-1">
+                <div class="border border-1 p-2 mx-1 my-0 bg-light" style="width:fit-content;">
+                    <p class="m-0" >
+                        {{ $report.Message }}
+                    </p>
+                    <p class="badge text-dark mb-0">
+                        submitted by <a href="/by/{{ $report.CreatorID }}">{{ $report.CreatorName }}</a>
+                    </p>
+                </div>
                 {{ if $report.OriginalPost}}
                     {{template "partials/post" (m "Post" $report.OriginalPost "Identity" $.Identity)}}
                 {{ end }}
-                <button class="btn btn-sm btn-link" hx-post="/cop/reports/{{ $report.PostID }}/dismiss">dismiss report</button>                    
+                {{ if $report.Processed }}
+                    <p class="mx-3 badge bg-success">this report has been dismissed.</p>
+                {{ else }}
+                    <button class="btn btn-sm btn-link" hx-post="/cop/reports/{{ $report.PostID }}/dismiss">dismiss report</button>                    
+                {{ end }}                
             </div>
         {{ end }}
     </div>

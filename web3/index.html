@@ -1,11 +1,12 @@
 <div class="container mb-3" style="max-width:768px">
+    {{ template "partials/paging" .}}
     {{ range $index, $topic := .Topics }}
         {{ template "partials/post" (m "Post" $topic "Identity" $.Identity) }}
-    {{ end}}
+    {{ end }}
+    {{ template "partials/paging" .}}
     {{ template "partials/last_posts" .}}
     {{if eq .Identity.Powers 95}}
         <div id="new-topic"></div>
         {{template "forms/create_topic" .}}
-    {{end}}
+    {{ end }}
 </div>
-

@@ -67,8 +67,8 @@ func Start() {
 		}
 	})
 
-	root.GET("/", Root)
-	root.GET("/index.exe", Index)
+	root.GET("/", Index)
+	root.GET("/welcome", Welcome)
 	root.GET("/chat", Chat)
 	// View a thread/topic/post whatever
 	root.GET("/:topic_id", ViewTopic)

@@ -41,7 +41,7 @@ func m(pairs ...any) (map[string]any, error) {
 }
 
 func formatTime(t time.Time) string {
-	return t.Format("15:04:03 02 Jan 2006")
+	return fmt.Sprintf("%02d:%02d:%02d %02d/%s/%04d", t.Hour(), t.Minute(), t.Second(), t.Day(), t.Month(), t.Year())
 }
 
 func readFile(filename string) string {

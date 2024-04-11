@@ -106,4 +106,11 @@ func fakepassport(g *echo.Group) {
 		return RenderPartial(c, "passport/use", R{})
 	})
 	g.POST("/use", Post_Fakepassport_Use)
+
+	g.GET("", func(c echo.Context) error {
+		s := session(c)
+		return c.Render(200, "fakepassport", R{
+			"Identity": s.id,
+		})
+	})
 }

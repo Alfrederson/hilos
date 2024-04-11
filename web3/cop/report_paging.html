@@ -1,0 +1,6 @@
+
+<div class="p-1 mb-0">
+    {{if gt .Page 0}}<a href="?p={{ .PrevPage }}{{ if .Processed }}&processed=true{{end}}">◀</a> -{{end}}
+    page {{ .Page }}
+    {{if gt .NextPage .Page }}- <a href="?p={{ .NextPage }}{{ if .Processed }}&processed=true{{end}}">▶</a>{{end}}
+</div>

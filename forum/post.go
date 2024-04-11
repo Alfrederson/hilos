@@ -33,8 +33,8 @@ func (p *Post) ObjectIndex() []string {
 	}
 }
 
-func ReadPostsByUser(userId string, fromPage int64) ([]Post, error) {
-	lista, _ := db.posts.FindLast("creator_id", "=", userId, int(fromPage), TOPIC_PAGE_COUNT)
+func ReadPostsByUser(userId string, page int64, perPage int64) ([]Post, error) {
+	lista, _ := db.posts.FindLast("creator_id", "=", userId, int(page), int(perPage))
 	posts := make([]Post, 0, TOPIC_PAGE_COUNT)
 	for _, data := range lista {
 		mensagem := Post{}

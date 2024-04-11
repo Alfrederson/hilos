@@ -11,18 +11,19 @@ type ReportedPost struct {
 }
 
 type GetReportOptions struct {
-	Stale bool
+	Processed bool
+	Page      int
+	PerPage   int
 }
 
 func GetReports(options GetReportOptions) ([]ReportedPost, error) {
-	result := make([]ReportedPost, 0, 10)
+	result := make([]ReportedPost, options.Page, options.PerPage)
 	var reports []string
 	var err error
-
-	if options.Stale {
-		reports, err = db.reports.FindLastUpdated(0, 100)
+	if options.Processed {
+		reports, err = db.reports.FindLastUpdated(options.Page, options.PerPage)
 	} else {
-		reports, err = db.reports.FindLastUpdatedWhere(0, 100, cond("processed", "=", false))
+		reports, err = db.reports.FindLastUpdatedWhere(options.Page, options.PerPage, cond("processed", "=", false))
 	}
 	if err != nil {
 		return result, err

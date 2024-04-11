@@ -1,0 +1,14 @@
+<div class="container mb-3" style="max-width:768px">
+    {{template "partials/paging" .}}
+    {{ range $index, $topic := .Topics }}
+        {{ template "partials/post" (m "Post" $topic "Identity" $.Identity) }}
+    {{ end}}
+    {{template "partials/paging" .}}
+    {{if eq .Identity.Powers 95}}
+        <div class="card bg-warning">
+            <div class="card-body">
+                opções de banir e tal vão ficar aqui.
+            </div>
+        </div>
+    {{end}}
+</div>

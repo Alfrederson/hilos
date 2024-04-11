@@ -1,4 +1,4 @@
-<div class="p-1" hx-target="this" hx-swap="outerHTML">
+<div class="p-1"  hx-target="this" hx-swap="outerHTML">
     <div class="border border-1 p-2 bg-light" style="width:fit-content;max-width:768px">
         <div class="card-header pb-0 pt-0 px-2">
             <p class="badge p-0 m-0">
@@ -17,7 +17,7 @@
                 <div class="badge text-dark">{{ .Post.ReportCount }}🚩</div>
             {{end}}
         </div>
-        <div class="p-2" style="white-space: pre-line;"><a href="/{{ .Post.Id }}">{{ .Post.Subject }}</a>        
+        <div class="p-2" style="white-space: pre-line;word-break: break-all;"><a href="/{{ .Post.Id }}">{{ .Post.Subject }}</a>        
             {{ .Post.Content }}
         </div>
         <div class="p-0">

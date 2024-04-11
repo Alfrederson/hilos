@@ -1,4 +1,4 @@
-<form class="container" hx-post="/visualbasic.exe/post/{{ .Topic.Id }}" hx-target="#new-post" hx-swap="outerHTML">
+<form class="container  p-2" hx-post="/visualbasic.exe/post/{{ .Topic.Id }}" hx-target="#new-post" hx-swap="outerHTML">
     <input type="hidden" value="{{ .Identity.Name }}" name="creator" />
     <div class="form-group mb-3">
         <input minlength="3" maxlength="128" required type="text" class="form-control" name="subject" placeholder="..." value="re: {{ .Topic.Subject }}">
@@ -7,6 +7,6 @@
         <textarea minlength="3" maxlength="512" required class="form-control" placeholder="..." name="content"></textarea>
     </div>
     <div class="form-group mb-3">
-        <button type="submit" class="text-dark btn form-control">📤 reply</button>
+        <button type="submit" class="text-light btn btn-success form-control">📤 reply</button>
     </div>
 </form>

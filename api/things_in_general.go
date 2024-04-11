@@ -10,6 +10,21 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func paramBool(c echo.Context, field string, def bool) bool {
+	val, err := strconv.ParseBool(c.QueryParam(field))
+	if err != nil {
+		return def
+	}
+	return val
+}
+func paramInt(c echo.Context, field string, def int64) int64 {
+	val, err := strconv.ParseInt(c.QueryParam(field), 32, 10)
+	if err != nil {
+		return def
+	}
+	return val
+}
+
 func requestedPage(c echo.Context) int64 {
 	page, _ := strconv.ParseInt(c.QueryParam("p"), 32, 10)
 	if page < 0 {

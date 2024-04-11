@@ -1,4 +1,4 @@
-<div class="card-body border py-2 px-3 mt-3 mx-1 bg-light" style="width: fit-content;">
+<div class="card-body border py-2 px-3 mt-3 mb-3 mx-1 bg-light" style="width: fit-content;">
 {{ range $index, $post := .LastPosts }}
 <p class="p-0 m-0">{{ formatTime $post.Time }} <a href="/{{ $post.Id }}">{{ crop $post.Content }}</a></p>
 {{ end }}

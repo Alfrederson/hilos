@@ -1,10 +1,10 @@
-<div class="container mb-3 border shadow p-2 bg-light" style="max-width:768px">
+<div class="container mb-0 border shadow p-2 bg-light" style="max-width:768px">
     <h5 class="mb-0">{{ .Topic.Subject }}</h5>
     <a class="badge text-dark m-0 p-0" href="/by/{{ .Topic.CreatorId }}">{{ .Topic.Creator }}~</a>
     {{ if .Topic.ParentId }}
     <a class="badge text-dark m-0 p-0" href="/{{ .Topic.ParentId }}">in response to {{ .Topic.ParentId }}</a>
     {{ else }}
-    <a class="badge text-dark m-0 p-0" href="/index.exe">🔙 back to index</a>
+    <a class="badge text-dark m-0 p-0" href="/">🔙 back to index</a>
     {{ end }}
     <p class="container mt-3" style="white-space: pre-line;word-break: break-all;font-family:monospace;">{{ .Topic.Content }}</p>
     <p class="badge text-dark small mb-0 p-0">
@@ -14,14 +14,17 @@
         {{end}}                    
     </p>
 </div>
-
 <div class="container" style="max-width: 768px;">
-    {{ range $index, $reply := .Topic.Replies }}
-    {{template "partials/post" (m "Post" $reply "Identity" $.Identity)}}
+    {{ if len .Topic.Replies }}
+        {{template "partials/paging" .}}
+        {{ range $index, $reply := .Topic.Replies }}
+        {{ template "partials/post" (m "Post" $reply "Identity" $.Identity)}}
+        {{ end }}
+        <div id="new-post"></div>
+        {{template "partials/paging" .}}
+    {{ else }}
+        <div id="new-post"></div>
     {{ end }}
-    <div id="new-post"></div>
-    {{template "partials/paging" .}}
-
     {{if not .Topic.Frozen}}
     {{template "partials/replyform" .}}
     {{end}}

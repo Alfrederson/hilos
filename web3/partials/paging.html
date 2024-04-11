@@ -1,9 +1,5 @@
-<div class="p-1 mb-3">
-    {{if gt .Page 0}}
-    <a href="/{{ .Topic.Id }}?p={{ .PrevPage }}">previous</a> -
-    {{end}}
+<div class="p-0 my-0">
+    {{if gt .Page 0}}<a href="?p={{ .PrevPage }}">◀</a> -{{end}}
     page {{ .Page }}
-    {{if gt .NextPage .Page }}
-    - <a href="/{{ .Topic.Id }}?p={{ .NextPage }}">next</a>
-    {{end}}
+    {{if gt .NextPage .Page }}- <a href="?p={{ .NextPage }}">▶</a>{{end}}
 </div>

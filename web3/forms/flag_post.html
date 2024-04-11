@@ -1,14 +1,14 @@
-<form class="container" hx-post="/visualbasic.exe/post/{{ .Post.Id }}/flag" hx-target="this" hx-swap="outerHTML">
+<form class="container mb-3 bg-warning" hx-post="/visualbasic.exe/post/{{ .Post.Id }}/flag" hx-target="this" hx-swap="outerHTML">
     <p style="white-space: pre-line;">
         {{.Post.Subject}}
         {{.Post.Content}}
     </p>
-    <p>Why should this post be flagged?</p>
-    <div class="form-group mb-3">
+    <label class="badge text-dark mb-0" for="message">why should this post be flagged? false reports may result in a IP ban</label>
+    <div class="form-group mb-2">
         <input type="text" class="form-control mb-1 p-1" name="message" placeholder="...">
     </div>
-    <div class="btn-group" role="group">
-        <button type="submit" class="badge btn bg-info text-dark">flag</button>
-        <button type="submit" class="badge btn bg-danger text-dark" hx-get="/post/{{ .Post.Id }}">cancel</button>
-    </div>
+    <span class="btn-group p-0 mb-2" role="group">
+        <button type="submit" class="btn btn-ghost btn-sm">👮‍♀️ flag</button>
+        <button type="submit" class="badge btn text-dark" hx-get="/post/{{ .Post.Id }}">❌ cancel</button>
+    </span>
 </form>
