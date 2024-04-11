@@ -7,6 +7,6 @@
         {{if or (eq .Identity.Powers 95) (eq .Identity.Id .Post.CreatorId)}}
         <button type="submit" class="btn btn-ghost btn-sm">✅ save</button>
         {{end}}
-        <button type="submit" class="btn btn-ghost btn-sm" hx-get="/post/{{ .Id }}">❌ Cancel</button>
+        <button type="submit" class="btn btn-ghost btn-sm" hx-get="/post/{{ .Id }}">❌ cancel</button>
     </span>
 </form>

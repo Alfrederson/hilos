@@ -32,21 +32,29 @@ type Identity struct {
 	IP        string `json:"-"`
 	Powers    int    `json:"powers"`
 	Signature string `json:"sign"`
+	Salzinho  string `json:"salzinho"`
+	Anonymous bool   `json:"anon"`
 }
 
 var SECRET string
 
 func (i *Identity) Check() bool {
-	text := fmt.Sprintf("%s %s %d salzinho", i.Name, i.Id, i.Powers)
-	if sign(text, SECRET) != i.Signature {
-		return false
+	text := fmt.Sprintf("%s %s %d %v %s", i.Name, i.Id, i.Powers, i.Anonymous, i.Salzinho)
+	s := sign(text, SECRET)
+	if s == i.Signature {
+	} else {
+		log.Println("---------------")
+		log.Println(text)
+		log.Println(s, "x", i.Signature)
 	}
-	return true
+	return s == i.Signature
 }
 
-func (i *Identity) Sign() {
-	text := fmt.Sprintf("%s %s %d salzinho", i.Name, i.Id, i.Powers)
+func (i *Identity) Sign() *Identity {
+	i.Salzinho = doc.GenerateId(20)
+	text := fmt.Sprintf("%s %s %d %v %s", i.Name, i.Id, i.Powers, i.Anonymous, i.Salzinho)
 	i.Signature = sign(text, SECRET)
+	return i
 }
 
 func (i *Identity) EncodeBase64() (string, error) {
@@ -65,7 +73,7 @@ func DecodeBase64(encoded string) (*Identity, error) {
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		log.Println("Erro decodificando identidade: ", err)
-		return nil, errors.New("could not decode identity")
+		return nil, errors.New("invalid encoding")
 	}
 
 	i := Identity{}
@@ -96,7 +104,20 @@ func New() Identity {
 		Id:     doc.GenerateId(20),
 		Powers: 1,
 	}
-	i.Sign()
+	return i
+}
+
+func NewAnonymous() Identity {
+	i := New()
+	i.Anonymous = true
+	return i
+}
+func NewNamed(name string) Identity {
+	i := Identity{
+		Name:   name + "#" + doc.GenerateId(4),
+		Id:     "usr_" + doc.GenerateId(20),
+		Powers: 1,
+	}
 	return i
 }
 

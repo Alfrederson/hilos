@@ -1,0 +1,26 @@
+<div class="container-sm mt-3" style="max-width:768px;" hx-target="this" hx-swap="outerHTML">
+    <div class="alert alert-success">
+        You are now {{ .Identity.Name }}.
+    </div>
+    <p>Your passport:</p>
+    <pre id="passport">
+{{ .Passport }}        
+    </pre>
+    <p>Copy and paste it somewhere. It's not possible to recover this fake passport.</p>
+    <div class="input-group mb-3">
+        <button onclick="copy()" class="btn btn-secondary form-control">copy</button>
+    </div>
+    <div class="input-group mb-3">
+        <button onclick="redirect()" class="btn btn-secondary form-control">ok</button>
+    </div>
+</div>
+<script>
+    function copy(){
+        const p = "{{.Passport}}"
+        navigator.clipboard.writeText(p)
+        alert("copied\n\n"+p+"\n\nto clipboard")
+    }
+    function redirect(){
+        window.location.href="/index.exe"
+    }
+</script>

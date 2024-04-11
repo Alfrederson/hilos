@@ -3,7 +3,6 @@ package api
 import (
 	"hilos/forum"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -18,14 +17,9 @@ func FormFlagPost(c echo.Context) error {
 	post_id := c.Param("post_id")
 	resultado, err := forum.ReadPost(post_id)
 	if err != nil {
-		return c.String(http.StatusBadRequest, err.Error())
+		return Error(c, err.Error())
 	}
-	return c.HTML(200, RenderTemplate(
-		"forms/flag_post",
-		R{
-			"Post": resultado,
-		},
-	))
+	return RenderPartial(c, "forms/flag_post", R{"Post": resultado})
 }
 
 func FlagPost(c echo.Context) error {
@@ -36,8 +30,8 @@ func FlagPost(c echo.Context) error {
 	}
 	report := Report{}
 	if err := c.Bind(&report); err != nil {
-		log.Println(err)
-		return c.HTML(http.StatusAccepted, RenderTemplate("alert/error", R{"Message": err}))
+		log.Println("erro parseando a requisição:", err)
+		return Error(c, err.Error())
 	}
 	if err := forum.ReportPost(
 		post_id,
@@ -50,7 +44,7 @@ func FlagPost(c echo.Context) error {
 			Time:        time.Now(),
 		},
 	); err != nil {
-		return c.HTML(http.StatusAccepted, RenderTemplate("alert/error", R{"Message": err}))
+		return Error(c, err.Error())
 	}
-	return c.HTML(http.StatusAccepted, RenderTemplate("alert/success", R{"Message": "post reported sir"}))
+	return Success(c, "post reported, sir")
 }

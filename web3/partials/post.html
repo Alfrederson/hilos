@@ -1,26 +1,26 @@
 <div class="p-1" hx-target="this" hx-swap="outerHTML">
-    <div class="card" style="width:fit-content;">
-        <div class="card-header pb-0 pt-0 pl-1">
+    <div class="border border-1 p-2 bg-light" style="width:fit-content;max-width:768px">
+        <div class="card-header pb-0 pt-0 px-2">
+            <p class="badge p-0 m-0">
+                <a href="/by/{{ .Post.CreatorId }}" class="text-dark">{{ .Post.Creator }}</a>
+            </p>
+            <p class="badge small text-dark m-0 p-0">
+                {{ formatTime .Post.Time }}
+                {{if eq .Identity.Powers 95}}
+                    (IP: {{.Post.IP}})
+                {{end}}                    
+            </p>
             {{if .Post.ReplyCount}}
                 <div class="badge text-dark">{{ .Post.ReplyCount }}🧵</div>
             {{end}}
             {{if .Post.ReportCount}}
                 <div class="badge text-dark">{{ .Post.ReportCount }}🚩</div>
             {{end}}
-            <p class="badge p-0 mb-0">
-                <a href="/by/{{ .Post.CreatorId }}" class="text-dark">{{ .Post.Creator }}</a>
-            </p>
-            <p class="small text-dark mb-0">
-                at {{ formatTime .Post.Time }}
-                {{if eq .Identity.Powers 95}}
-                    (IP: {{.Post.IP}})
-                {{end}}                    
-            </p>
         </div>
-        <div class="card-body p-2" style="white-space: pre-line;"><a href="/{{ .Post.Id }}">{{ .Post.Subject }}</a>        
+        <div class="p-2" style="white-space: pre-line;"><a href="/{{ .Post.Id }}">{{ .Post.Subject }}</a>        
             {{ .Post.Content }}
         </div>
-        <div class="card-footer p-1">
+        <div class="p-0">
             <span class="btn-group p-0" role="group">
                 {{if or (eq .Identity.Powers 95) (eq .Identity.Id .Post.CreatorId)}}
                 <button class="btn btn-sm" hx-get="/visualbasic.exe/post/{{.Post.Id}}/edit">📝edit</button>

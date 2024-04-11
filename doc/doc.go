@@ -126,7 +126,7 @@ func (db *DocDB) Add(path string, object interface{}) error {
 		return errors.New("invalid object")
 	}
 	// grava o documento...
-	db.conn.Debug().Exec("INSERT INTO docs(path,data,created_at,updated_at) VALUES(?,?,?,?)", path, string(bytes), time.Now(), time.Now())
+	db.conn.Exec("INSERT INTO docs(path,data,created_at,updated_at) VALUES(?,?,?,?)", path, string(bytes), time.Now(), time.Now())
 	return nil
 }
 
@@ -175,14 +175,30 @@ func (db *DocDB) GetLastUpdated(page int, perPage int) ([]string, error) {
 	return stuff, nil
 }
 
+type Condition struct {
+	Field string
+	Op    string
+	Value any
+}
+
+// Pega os últimos documentos atualizados onde algumas condições são verdadeiras.
+func (db *DocDB) FindLastUpdatedWhere(page int, perPage int, conditions ...Condition) ([]string, error) {
+	var stuff = make([]string, 0, perPage)
+	tx := db.conn.Table("docs").Select("data")
+	for _, cond := range conditions {
+		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
+	}
+	tx.Offset(perPage * page).Limit(perPage).Order("docs.updated_at DESC").Find(&stuff)
+	return stuff, nil
+}
+
 // Retorna o JSON de dentro dos objectos, ao invés de retornar os próprios objectos.
-func (db *DocDB) FindLastUpdated(field string, op string, value any, page int, perPage int) ([]string, error) {
+func (db *DocDB) FindLastUpdated(page int, perPage int) ([]string, error) {
 	// Where("data->>'$."+field+"' = ?", value).
 	var stuff = make([]string, 0, perPage)
 	db.conn.
 		Table("docs").
 		Select("data").
-		Where("data->>'$."+field+"' "+op+" ?", value).
 		Offset(perPage * page).
 		Limit(perPage).
 		Order("docs.updated_at DESC").
@@ -192,7 +208,7 @@ func (db *DocDB) FindLastUpdated(field string, op string, value any, page int, p
 
 func (db *DocDB) FindLast(field string, op string, value any, page int, perPage int) ([]string, error) {
 	var stuff = make([]string, 0, perPage)
-	db.conn.Debug().
+	db.conn.
 		Table("docs").
 		Select("data").
 		Where("data->>'$."+field+"' "+op+" ?", value).

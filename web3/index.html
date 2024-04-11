@@ -1,8 +1,8 @@
-{{ template "partials/last_posts" .}}
 <div class="container mb-3" style="max-width:768px">
     {{ range $index, $topic := .Topics }}
         {{ template "partials/post" (m "Post" $topic "Identity" $.Identity) }}
     {{ end}}
+    {{ template "partials/last_posts" .}}
     {{if eq .Identity.Powers 95}}
         <div id="new-topic"></div>
         {{template "forms/create_topic" .}}

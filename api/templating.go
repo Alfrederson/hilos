@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -42,7 +41,7 @@ func m(pairs ...any) (map[string]any, error) {
 }
 
 func formatTime(t time.Time) string {
-	return t.Format("15:04:03 01-Jan-2006")
+	return t.Format("15:04:03 02 Jan 2006")
 }
 
 func readFile(filename string) string {
@@ -58,10 +57,14 @@ type Pugger struct {
 	engine *html.Engine
 }
 
-func MakePugger() Pugger {
+type TemplateConfig struct {
+	Reload bool
+}
+
+func MakePugger(cfg TemplateConfig) Pugger {
 	p := Pugger{}
 	p.engine = html.New("./web3", ".html")
-	p.engine.Reload(true)
+	p.engine.Reload(cfg.Reload)
 	p.engine.AddFunc("crop", crop)
 	p.engine.AddFunc("m", m)
 	p.engine.AddFunc("formatTime", formatTime)
@@ -75,33 +78,46 @@ func (p Pugger) Render(w io.Writer, name string, data interface{}, c echo.Contex
 	}
 	return err
 }
+func (p Pugger) RenderWithoutLayout(w io.Writer, name string, data interface{}) error {
+	return p.engine.Render(w, name, data)
+}
 
 func Success(c echo.Context, message string) error {
-	return c.HTML(http.StatusAccepted, RenderTemplate("alert/success", R{"Message": message}))
+	return RenderPartial(c, "alert/success", R{"Message": message})
 }
 func Error(c echo.Context, message string) error {
-	return c.HTML(http.StatusAccepted, RenderTemplate("alert/error", R{"Message": message}))
+	return RenderPartial(c, "alert/error", R{"Message": message})
+}
+
+// renderiza um partial sem o layout.
+func RenderPartial(c echo.Context, partial string, data R) error {
+	pugger := c.Echo().Renderer.(Pugger)
+	buf := new(bytes.Buffer)
+	pugger.RenderWithoutLayout(buf, partial, data)
+	return c.HTMLBlob(http.StatusAccepted, buf.Bytes())
 }
 
 // O certo é não fazer isso, hehe.
-func RenderTemplate(templateName string, data R) string {
-	tmpl, err :=
-		template.
-			New("t").
-			Funcs(template.FuncMap{
-				"crop":       crop,
-				"formatTime": formatTime,
-				"m":          m,
-			}).Parse(readFile("web3/" + templateName + ".html"))
+// comentado por motivos históricos, mas isso é substituído pela
+// função de cima.
+// func RenderTemplate3(templateName string, data R) string {
+// 	tmpl, err :=
+// 		template.
+// 			New("t").
+// 			Funcs(template.FuncMap{
+// 				"crop":       crop,
+// 				"formatTime": formatTime,
+// 				"m":          m,
+// 			}).Parse(readFile("web3/" + templateName + ".html"))
 
-	if err != nil {
-		log.Println(err)
-		return "template dun gufd"
-	}
+// 	if err != nil {
+// 		log.Println(err)
+// 		return "template dun gufd"
+// 	}
 
-	buffer := bytes.Buffer{}
-	if err := tmpl.Execute(&buffer, data); err != nil {
-		return err.Error()
-	}
-	return buffer.String()
-}
+// 	buffer := bytes.Buffer{}
+// 	if err := tmpl.Execute(&buffer, data); err != nil {
+// 		return err.Error()
+// 	}
+// 	return buffer.String()
+// }

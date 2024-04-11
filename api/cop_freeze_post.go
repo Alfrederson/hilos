@@ -20,12 +20,13 @@ func Cop_FreezePost(c echo.Context) error {
 	if err := forum.RewritePost(post_id, original); err != nil {
 		return c.String(http.StatusInternalServerError, "the forum dun gufd")
 	}
-	return c.HTML(http.StatusAccepted, RenderTemplate(
-		"partials/post", R{
-			"Post":     original,
-			"Identity": s.id,
-		},
-	))
+	return RenderPartial(c, "partials/post", R{"Post": original, "Identity": s.id})
+	// return c.HTML(http.StatusAccepted, RenderTemplate(
+	// 	"partials/post", R{
+	// 		"Post":     original,
+	// 		"Identity": s.id,
+	// 	},
+	// ))
 }
 
 func Cop_UnfreezePost(c echo.Context) error {
@@ -43,10 +44,13 @@ func Cop_UnfreezePost(c echo.Context) error {
 	if err := forum.RewritePost(post_id, original); err != nil {
 		return c.String(http.StatusInternalServerError, "the forum dun gufd")
 	}
-	return c.HTML(http.StatusAccepted, RenderTemplate(
-		"partials/post", R{
-			"Post":     original,
-			"Identity": s.id,
-		},
-	))
+
+	return RenderPartial(c, "partials/post", R{"Post": original, "Identity": s.id})
+
+	// return c.HTML(http.StatusAccepted, RenderTemplate(
+	// 	"partials/post", R{
+	// 		"Post":     original,
+	// 		"Identity": s.id,
+	// 	},
+	// ))
 }

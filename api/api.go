@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"hilos/forum"
-	"hilos/identity"
 
 	"github.com/labstack/echo/v4"
 )
@@ -39,12 +38,12 @@ func onlyCopsAllowed(next echo.HandlerFunc) echo.HandlerFunc {
 func Start() {
 	e := echo.New()
 
-	pugger := MakePugger()
-	e.Renderer = pugger
+	e.Renderer = MakePugger(TemplateConfig{
+		Reload: true,
+	})
 
-	//	e.Renderer = t
 	e404 := func(c echo.Context) error {
-		return c.String(404, "not found")
+		return c.String(404, "not found sir")
 	}
 	ç := func(c echo.Context) error {
 		log.Println(c.RealIP(), " looking for ", c.Request().RequestURI)
@@ -68,11 +67,8 @@ func Start() {
 		}
 	})
 
-	root.GET("/testCop", func(c echo.Context) error {
-		return c.String(200, "You're a cop!")
-	}, onlyCopsAllowed)
-
-	root.GET("/", Index)
+	root.GET("/", Root)
+	root.GET("/index.exe", Index)
 	root.GET("/chat", Chat)
 	// View a thread/topic/post whatever
 	root.GET("/:topic_id", ViewTopic)
@@ -102,59 +98,19 @@ func Start() {
 		forum.RebuildIndex()
 		return c.String(http.StatusOK, fmt.Sprintf("took %v ", time.Since(start)))
 	})
-	cop.GET("/godmode.exe", func(c echo.Context) error {
-		i := identity.New()
-		i.Powers = 95
-		i.Sign()
-		encoded, err := i.EncodeBase64()
-		if err != nil {
-			return c.String(http.StatusInternalServerError, "could not send your new id")
-		}
-		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded})
-		return c.String(http.StatusOK, encoded)
-	})
 
 	// freeze/unfreeze a post
 	cop.PUT("/post/:post_id/freeze", Cop_FreezePost)
 	cop.PUT("/post/:post_id/unfreeze", Cop_UnfreezePost)
 	cop.DELETE("/post/:post_id", Cop_PrunePost)
 
-	// creates a new identity
-	root.GET("/newidentity.exe", func(c echo.Context) error {
-		i := identity.New()
-		encoded, err := i.EncodeBase64()
-		if err != nil {
-			return c.String(http.StatusInternalServerError, "could not send your new id")
-		}
-		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded})
-		return c.String(http.StatusOK, encoded)
-	})
+	fakepassport(root.Group("/fakepassport.exe"))
 
-	root.GET("fakepassport.exe/:passport", func(c echo.Context) error {
-		i, err := identity.DecodeBase64(c.Param("passport"))
-		if err != nil {
-			log.Println("fake passport: ", err)
-			return c.String(http.StatusPaymentRequired, "need to pay bribe for fake passport. its very fake.")
-		}
-		if !i.Check() {
-			return c.String(http.StatusConflict, "sorry sir this isn't accepted")
-		}
-		encoded, err := i.EncodeBase64()
-		if err != nil {
-			return c.String(http.StatusConflict, "could not encode fake passport")
-		}
-		c.SetCookie(&http.Cookie{Name: "rwt", Value: encoded, Path: "/"})
-		return c.String(http.StatusOK, fmt.Sprintf("you are now %s %s with powers %d", i.Id, i.Name, i.Powers))
-	})
-
-	root.GET("/whoami.exe", func(c echo.Context) error {
-		user := whoami(c)
-		return c.String(http.StatusOK, fmt.Sprint(user.Id, user.Name))
-	})
 	// isso era pra mandar só JSON, mas agora manda HTML.
 	// se eu quiser fazer um app, vou precisar voltar pra teoria do json.
 	api := e.Group("visualbasic.exe", sessionStarter)
 
+	// vou tirar essas coisas de json, não sei quando.
 	// view all topics
 	api.GET("/json/:page", func(c echo.Context) error {
 		page, err := strconv.ParseInt(c.Param("page"), 10, 32)
@@ -206,7 +162,8 @@ func Start() {
 		if err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
-		return c.HTML(200, RenderTemplate("partials/post", R{"Identity": s.id, "Post": nova_conversa}))
+		return RenderPartial(c, "partials/post", R{"Identity": s.id, "Post": nova_conversa})
+		//return c.HTML(200, RenderTemplate("partials/post", R{"Identity": s.id, "Post": nova_conversa}))
 	}, onlyCopsAllowed)
 
 	api.GET("/post/:post_id/edit", FormEditPost)

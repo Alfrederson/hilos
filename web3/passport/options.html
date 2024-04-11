@@ -1,0 +1,23 @@
+<div class="container-sm mt-3" style="max-width:768px;" hx-target="this" hx-swap="outerHTML">
+    {{ if not .Identity.Anonymous }}
+        <div class="alert alert-info">
+            🐶 you're currently {{ .Identity.Name }}. by creating a new fake passport, you will no longer be {{ .Identity.Name }}.
+        </div>
+    {{ end }}
+    <div class="input-group mb-3">
+        <button class="btn btn-success form-control" hx-get="/fakepassport.exe/new">Create a fake passport</button>
+        <button class="btn btn-info form-control" hx-get="/fakepassport.exe/use">Use a fake passport</button>    
+    </div>
+    
+    <div class="input-group mt-3">
+        <button class="btn btn-info form-control" onclick="redirect()">by clicking here, i agree with the terms</button>    
+    </div>
+</div>
+<script>
+    // botar isso tudo em um só arquivo?
+    // botar esses pedacinhos em um template cada?
+    function redirect(){
+        window.location.href="/index.exe"
+    }
+    // se você está lendo isso, me mande uma mensagem no linquedinho!
+</script>

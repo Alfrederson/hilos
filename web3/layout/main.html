@@ -37,13 +37,16 @@
                 .ticker::-webkit-scrollbar-thumb:hover {
                     background: #555; 
                 }
+                body{
+                    font-family: monospace;
+                }
         </style>
     </head>
     <body>
         {{template "layout/header" .}}
         <div class="container-fluid">
             {{embed}}
-            {{if .Elapsed}} <p class="badge text-dark">{{.Elapsed}}</p> {{end}}
+            {{if .Elapsed}} <p class="badge text-light">{{.Elapsed}}</p> {{end}}
         </div>
     </body>
 </html>

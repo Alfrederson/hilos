@@ -16,3 +16,10 @@ func Index(c echo.Context) error {
 		"Topics":    topicList,
 	})
 }
+
+func Root(c echo.Context) error {
+	identity := whoami(c)
+	return c.Render(200, "root", R{
+		"Identity": identity,
+	})
+}

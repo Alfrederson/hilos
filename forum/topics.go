@@ -54,7 +54,7 @@ func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 
 	// TODO: deixar a pessoa escolher se quer ver os primeiros, os últimos, os últimos que tiveram
 	//       respostas.
-	lista, _ := db.posts.FindLastUpdated("parent_id", "=", topic_id, int(fromPage), TOPIC_PAGE_COUNT)
+	lista, _ := db.posts.FindLastUpdatedWhere(int(fromPage), TOPIC_PAGE_COUNT, cond("parent_id", "=", topic_id))
 	for _, data := range lista {
 		mensagem := Post{}
 		err := json.Unmarshal([]byte(data), &mensagem)

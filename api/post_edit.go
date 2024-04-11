@@ -25,14 +25,11 @@ func FormEditPost(c echo.Context) error {
 	if post.CreatorId != s.id.Id && !s.id.CanMod() {
 		return c.String(http.StatusForbidden, " cant edit post, sir")
 	}
-	return c.HTML(200, RenderTemplate(
-		"forms/edit_post",
-		R{
-			"Id":      post.Id,
-			"Subject": post.Subject,
-			"Content": post.Content,
-		},
-	))
+	return RenderPartial(c, "forms/edit_post", R{
+		"Id":      post.Id,
+		"Subject": post.Subject,
+		"Content": post.Content,
+	})
 }
 
 func EditPost(c echo.Context) error {
@@ -62,10 +59,8 @@ func EditPost(c echo.Context) error {
 	if err := forum.RewritePost(post_id, original); err != nil {
 		return Error(c, err.Error())
 	}
-	return c.HTML(http.StatusAccepted, RenderTemplate(
-		"partials/post", R{
-			"Post":     original,
-			"Identity": s.id,
-		},
-	))
+	return RenderPartial(c, "partials/post", R{
+		"Post":     original,
+		"Identity": s.id,
+	})
 }

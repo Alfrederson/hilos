@@ -10,7 +10,7 @@ import (
 
 func Cop_ViewReports(c echo.Context) error {
 	s := session(c)
-	reports, err := forum.GetReports()
+	reports, err := forum.GetReports(forum.GetReportOptions{Stale: false})
 	if err != nil {
 		log.Println("error getting reports:", err)
 		return c.String(http.StatusInternalServerError, "the forum dun guf'd")

@@ -4,6 +4,7 @@ import (
 	"hilos/forum"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -21,31 +22,30 @@ func ReplyThread(c echo.Context) error {
 	if err := c.Bind(&post); err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
+	post.Content = strings.TrimSpace(post.Content)
 	length := len(post.Content)
 	if length < 3 {
-		return c.String(http.StatusBadRequest, "content too short, sir")
+		return Error(c, "content is too short (must be at least 3 bytes)")
 	}
 	if length > 512 {
-		return c.String(http.StatusBadRequest, "content too long, sir")
+		return Error(c, "content is too long (can be at most 512 bytes)")
 	}
 	topic, err := forum.GetTopic(topic_id)
 	if err != nil {
-		return c.String(http.StatusNotFound, "no such topic")
+		return Error(c, "topic doesn't exist (it probably was deleted)")
 	}
 	if topic.Frozen && !s.id.CanMod() {
-		return c.String(http.StatusNotFound, "cannot reply frozen topic")
+		return Error(c, "can't reply to frozen topic")
 	}
 	id, err := forum.WritePost(topic, post)
 	if err != nil {
 		log.Println("couldn't reply to topic ", topic_id, ":", err)
-		return c.String(http.StatusBadRequest, "could not record the message")
+		return Error(c, err.Error())
 	}
 	post.Id = id
-	return c.HTML(200, RenderTemplate(
-		"partials/post", R{
-			"NewPost":  true,
-			"Identity": s.id,
-			"Post":     post,
-		},
-	))
+	return RenderPartial(c, "partials/post", R{
+		"NewPost":  true,
+		"Identity": s.id,
+		"Post":     post,
+	})
 }

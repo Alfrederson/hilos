@@ -10,22 +10,20 @@ type ReportedPost struct {
 	Report
 }
 
-func GetReports() ([]ReportedPost, error) {
+type GetReportOptions struct {
+	Stale bool
+}
+
+func GetReports(options GetReportOptions) ([]ReportedPost, error) {
 	result := make([]ReportedPost, 0, 10)
+	var reports []string
+	var err error
 
-	/*
-		lista, _ := db.posts.FindLastUpdated("parent_id", "=", topic_id, int(fromPage), TOPIC_PAGE_COUNT)
-		for _, data := range lista {
-			mensagem := Post{}
-			err := json.Unmarshal([]byte(data), &mensagem)
-			if err != nil {
-				log.Println(err)
-			}
-			topic.Replies = append(topic.Replies, mensagem)
-		}
-
-	*/
-	reports, err := db.reports.FindLastUpdated("processed", "=", false, 0, 100)
+	if options.Stale {
+		reports, err = db.reports.FindLastUpdated(0, 100)
+	} else {
+		reports, err = db.reports.FindLastUpdatedWhere(0, 100, cond("processed", "=", false))
+	}
 	if err != nil {
 		return result, err
 	}

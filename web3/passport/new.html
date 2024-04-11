@@ -1,0 +1,15 @@
+<form hx-post="/fakepassport.exe/new" hx-target="this" hx-swap="outerHTML" class="container-sm mt-3" style="max-width:768px;">
+    {{ if .Error }}
+        <div class="alert alert-danger">{{ .Error }}</div>
+    {{ end }}
+    <div class="form mb-3">
+        <label for="name">enter a name:</label>
+        <input class="form-control" type="text" maxlength="12" minlength="3" name="name" placeholder="the name you want to use" />
+    </div>
+    <div class="input-group mb-3">
+        <button class="btn btn-success form-control" type="submit">ok</button>
+    </div>
+    <div class="input-group">
+        <button class="btn btn-danger form-control" hx-get="/fakepassport.exe/options">cancel</button>
+    </div>
+</form>
