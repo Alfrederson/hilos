@@ -1,4 +1,4 @@
-<div class="container mb-0 border shadow p-2 bg-light" style="max-width:768px">
+<div class="container mb-0 p-2" style="max-width:768px">
     <h5 class="mb-0">{{ .Topic.Subject }}</h5>
     <a class="badge text-dark m-0 p-0" href="/by/{{ .Topic.CreatorId }}">{{ .Topic.Creator }}~</a>
     {{ if .Topic.ParentId }}
@@ -26,6 +26,6 @@
         <div id="new-post"></div>
     {{ end }}
     {{if not .Topic.Frozen}}
-    {{template "partials/replyform" .}}
+    {{template "forms/reply_post" .}}
     {{end}}
 </div>

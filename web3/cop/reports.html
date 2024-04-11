@@ -5,7 +5,7 @@
         {{ template "cop/report_paging" .}}
         {{ range $index, $report := .Reports }}
             <div hx-target="this" hx-swap="innerHTML" class="p-1">
-                <div class="border border-1 p-2 mx-1 my-0 bg-light" style="width:fit-content;">
+                <div class="p-2 mx-1 my-0 bg-post" style="width:fit-content;">
                     <p class="m-0" >
                         {{ $report.Message }}
                     </p>

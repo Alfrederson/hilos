@@ -1,5 +1,5 @@
 <div class="p-1">
-    <div class="card bg-light">
+    <div class="p-3 bg-post">
         <div class="card-body">
             <form hx-post="/visualbasic.exe/" hx-target="#new-topic" hx-swap="outerHTML">
                 <input type="hidden" value="{{ .Identity.Name }}" name="creator" />
@@ -10,7 +10,7 @@
                     <textarea class="form-control" placeholder="..." name="content"></textarea>
                 </div>
                 <div class="form-group mb-3">
-                    <button type="submit" class="badge bg-dark text-light btn form-control">Create new topic</button>
+                    <button type="submit" class="bg-success text-dark btn form-control">Create new topic</button>
                 </div>
             </form>
         </div>
