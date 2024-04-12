@@ -106,7 +106,6 @@ func (db *DocDB) Save(path string, object interface{}) error {
 		Path:      path,
 		Data:      bytes,
 	}
-	log.Println("rewriting " + path)
 	db.conn.Save(&doc)
 	return nil
 }
@@ -181,14 +180,51 @@ type Condition struct {
 	Value any
 }
 
+// conta quantos registros tem na coleção.
+func (db *DocDB) Count() int64 {
+	var r int64 = 0
+	db.conn.Table("docs").Count(&r)
+	return r
+}
+
+// conta quantos registros tem de acordo com as condições.
+func (db *DocDB) CountWhere(conditions ...Condition) int64 {
+	var r int64 = 0
+	tx := db.conn.Table("docs")
+	for _, cond := range conditions {
+		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
+	}
+	tx.Count(&r)
+	return r
+}
+
+// Retorna os caminhos dos documentos onde condição por ordem de criação.
+func (db *DocDB) ListWhere(page int, perPage int, conditions ...Condition) ([]string, error) {
+	stuff := make([]string, 0)
+	tx := db.conn.Table("docs").Select("path")
+	for _, cond := range conditions {
+		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
+	}
+	tx = tx.Offset(perPage * page)
+	if perPage > 0 {
+		tx = tx.Limit(perPage)
+	}
+	tx.Order("docs.created_at ASC").Find(&stuff)
+	return stuff, nil
+}
+
 // Pega os últimos documentos atualizados onde algumas condições são verdadeiras.
 func (db *DocDB) FindLastUpdatedWhere(page int, perPage int, conditions ...Condition) ([]string, error) {
-	var stuff = make([]string, 0, perPage)
+	var stuff = make([]string, 0)
 	tx := db.conn.Table("docs").Select("data")
 	for _, cond := range conditions {
 		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
 	}
-	tx.Offset(perPage * page).Limit(perPage).Order("docs.updated_at DESC").Find(&stuff)
+	tx = tx.Offset(perPage * page)
+	if perPage > 0 {
+		tx = tx.Limit(perPage)
+	}
+	tx.Order("docs.updated_at DESC").Find(&stuff)
 	return stuff, nil
 }
 

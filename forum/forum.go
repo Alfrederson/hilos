@@ -24,6 +24,8 @@ var db struct {
 
 type ForumStatus struct {
 	somethingChanged bool
+	PendingPrunes    int
+	TotalPosts       int
 	LastPosts        []*Post
 }
 
@@ -36,6 +38,7 @@ func Status() *ForumStatus {
 // trocar isso pelo ring buffer
 func (s *ForumStatus) PubPost(p *Post) {
 	s.somethingChanged = true
+	s.TotalPosts++
 	s.LastPosts = append(s.LastPosts, p)
 	if len(s.LastPosts) > 4 {
 		s.LastPosts = s.LastPosts[1:]
@@ -48,8 +51,10 @@ func RebuildIndex() {
 func Nuke() {
 	db.posts.Clear()
 	db.reports.Clear()
-	db.posts.RebuildIndex()
-	db.reports.RebuildIndex()
+	db.prunes.Clear()
+	db.status.Clear()
+	status.PendingPrunes = 0
+	status.TotalPosts = 0
 }
 func Start() {
 	db.posts = doc.Create("posts.db", &Post{})
@@ -57,17 +62,24 @@ func Start() {
 	db.status = doc.Create("status.db", nil)
 	db.prunes = doc.Create("prunes.db", nil)
 	db.status.Get("lastPosts", &status.LastPosts)
+
+	status.PendingPrunes = int(db.prunes.Count())
+	status.TotalPosts = int(db.posts.Count())
 	// persiste periodicamente os últimos posts...
 	go func() {
 		for {
 			if !status.somethingChanged {
-				log.Println("⏲️")
-				time.Sleep(time.Second * 240)
+				if status.PendingPrunes > 0 {
+					log.Println("jannies are working ... ")
+					RunPruneTask()
+				}
+				time.Sleep(time.Second * 15)
 				continue
 			}
-			time.Sleep(time.Second * 15)
+			log.Println("writing status...")
 			db.status.Save("lastPosts", &status.LastPosts)
 			status.somethingChanged = false
+			time.Sleep(time.Second * 300)
 		}
 	}()
 

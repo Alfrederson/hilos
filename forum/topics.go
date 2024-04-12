@@ -40,12 +40,14 @@ func CreateRootTopic(t Post) (string, error) {
 		return "", err
 	}
 
+	status.TotalPosts++
+
 	return id, err
 }
 
 func ReadTopic(topic_id string, fromPage int64) (*Post, error) {
 	topic := Post{}
-
+	// pega a raiz...
 	if err := db.posts.Get(topic_id, &topic); err != nil {
 		return nil, errors.New("error reading topic. database dead or topic doesn't exist")
 	}

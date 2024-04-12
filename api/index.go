@@ -23,12 +23,13 @@ func Index(c echo.Context) error {
 		prevPage = page - 1
 	}
 	return c.Render(200, "index", R{
-		"Identity":  s.id,
-		"LastPosts": forum.Status().LastPosts,
-		"Topics":    topicList,
-		"Page":      page,
-		"PrevPage":  prevPage,
-		"NextPage":  nextPage,
+		"Identity":   s.id,
+		"TotalPosts": forum.Status().TotalPosts,
+		"LastPosts":  forum.Status().LastPosts,
+		"Topics":     topicList,
+		"Page":       page,
+		"PrevPage":   prevPage,
+		"NextPage":   nextPage,
 	})
 }
 

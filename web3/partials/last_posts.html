@@ -2,4 +2,5 @@
 {{ range $index, $post := .LastPosts }}
 <p class="p-0 m-0">{{ formatTime $post.Time }} <a href="/{{ $post.Id }}">{{ crop $post.Content }}</a></p>
 {{ end }}
+{{ .TotalPosts }} posts
 </div>

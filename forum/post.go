@@ -33,14 +33,18 @@ func (p *Post) ObjectIndex() []string {
 	}
 }
 
+func (p *Post) FromJSON(j string) error {
+	return json.Unmarshal([]byte(j), p)
+}
+
 func ReadPostsByUser(userId string, page int64, perPage int64) ([]Post, error) {
 	lista, _ := db.posts.FindLast("creator_id", "=", userId, int(page), int(perPage))
 	posts := make([]Post, 0, TOPIC_PAGE_COUNT)
 	for _, data := range lista {
 		mensagem := Post{}
-		err := json.Unmarshal([]byte(data), &mensagem)
-		if err != nil {
+		if err := mensagem.FromJSON(data); err != nil {
 			log.Println(err)
+			continue
 		}
 		posts = append(posts, mensagem)
 	}
@@ -92,6 +96,7 @@ func RewritePost(id string, rewrite *Post) error {
 }
 
 // os posts vão sumindo aos poucos, recursivamente
+// a gente não precisa fazer isso, mas vai que...
 type PruneTask struct {
 	PostID string `json:"post_id"`
 }
@@ -101,6 +106,7 @@ func PrunePost(postId string) error {
 		return errors.New("post doesn't exist")
 	}
 	db.posts.Delete(postId)
+	status.TotalPosts--
 	err := db.prunes.Save(postId, &PruneTask{
 		PostID: postId,
 	})
@@ -108,6 +114,54 @@ func PrunePost(postId string) error {
 		log.Println("error issuing prune task: ", err)
 	} else {
 		log.Println("prune task has been issued")
+		status.PendingPrunes++
 	}
 	return nil
+}
+
+func KillOrphans() {
+	log.Println("killing orphans")
+	orphans, _ := db.posts.ListWhere(0, 20)
+	for _, o := range orphans {
+		p := Post{}
+		if err := db.posts.Get(o, &p); err != nil {
+			log.Println(err)
+		}
+		if !db.posts.Exists(p.ParentId) {
+			log.Println("post orfão: ", o)
+			db.posts.Delete(o)
+		}
+	}
+}
+func RunPruneTask() {
+	// killing orphans
+	log.Println("there are", status.PendingPrunes, "pending prunes")
+	tasks, err := db.prunes.ListWhere(0, 3)
+	if err != nil {
+		log.Println("error pruning: ", err)
+		return
+	}
+	for _, v := range tasks {
+		log.Println("pruning ", v)
+		if err != nil {
+			log.Println("post probably doesn't exist anymore.")
+			continue
+		}
+		// manda matar os filhos
+		replies, _ := db.posts.ListWhere(0, -1, cond("parent_id", "=", v))
+		for _, data := range replies {
+			log.Println("deleting", data)
+			db.posts.Delete(data)
+			status.TotalPosts--
+			if err := db.prunes.Save(data, PruneTask{PostID: data}); err != nil {
+				log.Println("erro agendando poda do post ", data, ":", err)
+				continue
+			}
+			status.PendingPrunes++
+		}
+		// manda apagar essa task.
+		log.Println("deleting the task")
+		db.prunes.Delete(v)
+		status.PendingPrunes--
+	}
 }
