@@ -1,4 +1,4 @@
-module hilos
+module github.com/Alfrederson/hilos
 
 go 1.20
 
