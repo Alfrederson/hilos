@@ -1,8 +1,9 @@
 package api
 
 import (
-	"hilos/forum"
 	"time"
+
+	"github.com/Alfrederson/hilos/forum"
 
 	"github.com/labstack/echo/v4"
 )

@@ -3,9 +3,10 @@ package forum
 import (
 	"encoding/json"
 	"errors"
-	"hilos/doc"
 	"log"
 	"time"
+
+	"github.com/Alfrederson/hilos/doc"
 )
 
 // Path é o caminho do post.

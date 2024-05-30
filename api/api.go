@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"hilos/forum"
+	"github.com/Alfrederson/hilos/forum"
 
 	"github.com/labstack/echo/v4"
 )

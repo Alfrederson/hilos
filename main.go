@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"hilos/api"
-	"hilos/forum"
-	"hilos/identity"
 	"os"
+
+	"github.com/Alfrederson/hilos/api"
+	"github.com/Alfrederson/hilos/forum"
+	"github.com/Alfrederson/hilos/identity"
 )
 
 // arquitetura:

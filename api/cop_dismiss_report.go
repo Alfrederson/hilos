@@ -1,8 +1,9 @@
 package api
 
 import (
-	"hilos/forum"
 	"log"
+
+	"github.com/Alfrederson/hilos/forum"
 
 	"github.com/labstack/echo/v4"
 )

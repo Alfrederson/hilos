@@ -1,9 +1,10 @@
 package api
 
 import (
-	"hilos/forum"
 	"log"
 	"net/http"
+
+	"github.com/Alfrederson/hilos/forum"
 
 	"github.com/labstack/echo/v4"
 )

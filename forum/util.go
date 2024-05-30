@@ -1,6 +1,6 @@
 package forum
 
-import "hilos/doc"
+import "github.com/Alfrederson/hilos/doc"
 
 func cond(field string, op string, value any) doc.Condition {
 	return doc.Condition{

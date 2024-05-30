@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"hilos/doc"
+	"github.com/Alfrederson/hilos/doc"
 )
 
 const (

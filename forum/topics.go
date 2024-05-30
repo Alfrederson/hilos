@@ -3,9 +3,10 @@ package forum
 import (
 	"encoding/json"
 	"errors"
-	"hilos/doc"
 	"log"
 	"time"
+
+	"github.com/Alfrederson/hilos/doc"
 )
 
 func GetRootTopics(page int, count int) []Post {

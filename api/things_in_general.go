@@ -2,10 +2,11 @@ package api
 
 import (
 	"errors"
-	"hilos/identity"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/Alfrederson/hilos/identity"
 
 	"github.com/labstack/echo/v4"
 )

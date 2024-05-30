@@ -15,7 +15,7 @@ import (
 
 	"encoding/json"
 
-	"hilos/doc"
+	"github.com/Alfrederson/hilos/doc"
 )
 
 func sign(message, secret string) string {

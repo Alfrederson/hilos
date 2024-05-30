@@ -1,7 +1,7 @@
 package api
 
 import (
-	"hilos/identity"
+	"github.com/Alfrederson/hilos/identity"
 
 	"github.com/labstack/echo/v4"
 )
