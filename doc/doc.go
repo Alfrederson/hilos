@@ -296,6 +296,20 @@ func (db *DocDB) Rollback() {
 	db.txMutex.Unlock()
 }
 
+// transforma uma array de JSONS em uma array de T.
+func RecordsToStructs[T any](records []string) []*T {
+	result := make([]*T, len(records))
+	for _, v := range records {
+		var entry T
+		err := json.Unmarshal([]byte(v), &entry)
+		if err != nil {
+			log.Println("RecordsToStructs:", err)
+		}
+		result = append(result, &entry)
+	}
+	return result
+}
+
 func Begin(group ...*DocDB) {
 	for _, v := range group {
 		v.Begin()
