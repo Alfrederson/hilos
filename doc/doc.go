@@ -79,6 +79,8 @@ type DocDB struct {
 	indexable Indexable
 }
 
+// Gera um caminho de documento a partir de um prefixo.
+// retorna algo tipo coisas/quadradas/ASDOIJZXCXC
 func New(parts ...interface{}) string {
 	if len(parts) == 0 {
 		return GenerateId(16)
@@ -93,6 +95,7 @@ func New(parts ...interface{}) string {
 	return result
 }
 
+// Salva um documento no caminho especificado. Acho que isso equivale a um upsert.
 func (db *DocDB) Save(path string, object interface{}) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
@@ -116,6 +119,7 @@ func (db *DocDB) Clear() {
 	db.conn.Exec("DELETE from docs")
 }
 
+// Adiciona um documento no caminho especificado.
 func (db *DocDB) Add(path string, object interface{}) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
@@ -129,6 +133,7 @@ func (db *DocDB) Add(path string, object interface{}) error {
 	return nil
 }
 
+// Diz se um documento existe com o caminho especificado.
 func (db *DocDB) Exists(path string) bool {
 	type Path struct {
 		Path string `gorm:"primaryKey"`
@@ -198,77 +203,77 @@ func (db *DocDB) CountWhere(conditions ...Condition) int64 {
 	return r
 }
 
-// Retorna os caminhos dos documentos onde condição por ordem de criação.
+// Retorna os caminhos (ids) dos documentos onde condição por ordem de criação.
+// page é o offset.
+// per page são quantos documentos retornar por página.
+// se per page for zero, manda todos os que eu achar.
 func (db *DocDB) ListWhere(page int, perPage int, conditions ...Condition) ([]string, error) {
 	stuff := make([]string, 0)
 	tx := db.conn.Table("docs").Select("path")
 	for _, cond := range conditions {
 		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
 	}
-	tx = tx.Offset(perPage * page)
 	if perPage > 0 {
-		tx = tx.Limit(perPage)
+		tx = tx.Offset(perPage * page).Limit(perPage)
 	}
 	tx.Order("docs.created_at ASC").Find(&stuff)
 	return stuff, nil
 }
 
-// Pega os últimos documentos atualizados onde algumas condições são verdadeiras.
+// Pega o JSON dos últimos documentos atualizados onde algumas condições são verdadeiras.
+// page é o offset.
+// per page são quantos documentos retornar por página.
+// se per page for zero, manda todos os que eu achar.
 func (db *DocDB) FindLastUpdatedWhere(page int, perPage int, conditions ...Condition) ([]string, error) {
 	var stuff = make([]string, 0)
 	tx := db.conn.Table("docs").Select("data")
 	for _, cond := range conditions {
 		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
 	}
-	tx = tx.Offset(perPage * page)
 	if perPage > 0 {
-		tx = tx.Limit(perPage)
+		tx = tx.Offset(perPage * page).Limit(perPage)
 	}
 	tx.Order("docs.updated_at DESC").Find(&stuff)
 	return stuff, nil
 }
 
-// Retorna o JSON de dentro dos objectos, ao invés de retornar os próprios objectos.
+// Retorna o JSON de dentro dos registros que foram atualizados mais recentemente.
 func (db *DocDB) FindLastUpdated(page int, perPage int) ([]string, error) {
 	// Where("data->>'$."+field+"' = ?", value).
 	var stuff = make([]string, 0, perPage)
-	db.conn.
-		Table("docs").
-		Select("data").
-		Offset(perPage * page).
-		Limit(perPage).
-		Order("docs.updated_at DESC").
-		Find(&stuff)
+	tx := db.conn.Table("docs").Select("data")
+	if perPage > 0 {
+		tx = tx.Offset(perPage * page).Limit(perPage)
+	}
+	tx.Order("docs.updated_at DESC").Find(&stuff)
 	return stuff, nil
 }
 
+// Pega o JSON dos últimos perPage documentos que atendam a um critério.
 func (db *DocDB) FindLast(field string, op string, value any, page int, perPage int) ([]string, error) {
 	var stuff = make([]string, 0, perPage)
-	db.conn.
-		Table("docs").
-		Select("data").
-		Where("data->>'$."+field+"' "+op+" ?", value).
-		Offset(page * perPage).
-		Limit(perPage).
-		Order("docs.created_at DESC").
-		Find(&stuff)
+	tx := db.conn.Table("docs").Select("data").Where("data->>'$."+field+"' "+op+" ?", value)
+	if perPage > 0 {
+		tx = tx.Offset(page * perPage).Limit(perPage)
+	}
+	tx.Order("docs.created_at DESC").Find(&stuff)
 	return stuff, nil
 }
 
+// Pega o ID de todos os documentos que atendam um critério.
+// ex: pra pegar o que tem { "cor" : "laranja" }, eu uso bolinhas.Find("cor","=","laranja",0,0)
 func (db *DocDB) Find(field string, op string, value string, page int, perPage int) ([]string, error) {
 	//SELECT * FROM employees WHERE address->>'$.postalCode' = '60611';
 	type Entry struct {
 		Path string
 	}
 	docs := make([]Entry, 0, perPage)
-	// INJECTION!!!
-	db.conn.
-		Table("docs").
-		Select("path").
-		Where("data->>'$."+field+"' = ?", value).
-		Offset(page * perPage).
-		Limit(perPage).
-		Find(&docs)
+	// INJECTION!!! <- medo infundado?
+	tx := db.conn.Table("docs").Select("path").Where("data->>'$."+field+"' = ?", value)
+	if perPage > 0 {
+		tx = tx.Offset(page * perPage).Limit(perPage)
+	}
+	tx.Find(&docs)
 	result := make([]string, 0, len(docs))
 	for _, entry := range docs {
 		result = append(result, entry.Path)
@@ -307,6 +312,7 @@ func Rollback(group ...*DocDB) {
 	}
 }
 
+// Cria uma nova "instância" de uma coleção de um tipo específico.
 func Create(file string, indexable Indexable) *DocDB {
 	conn := sqlite.Open(DOCDB_PATH + file)
 
@@ -349,6 +355,7 @@ func dropAllIndexes(db *gorm.DB) error {
 	return nil
 }
 
+// Reconstroi o índice da coleção.
 func (d *DocDB) RebuildIndex() {
 	log.Println("rebuilding index for ", d.Name)
 	// drop indices
