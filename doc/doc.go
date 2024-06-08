@@ -298,7 +298,7 @@ func (db *DocDB) Rollback() {
 
 // transforma uma array de JSONS em uma array de T.
 func RecordsToStructs[T any](records []string) []*T {
-	result := make([]*T, len(records))
+	result := make([]*T, 0,len(records))
 	for _, v := range records {
 		var entry T
 		err := json.Unmarshal([]byte(v), &entry)
