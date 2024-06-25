@@ -281,6 +281,11 @@ func (db *DocDB) Find(field string, op string, value string, page int, perPage i
 	return result, nil
 }
 
+// pra fazer algumas coisas malucas...
+func (db *DocDB) Conn() *gorm.DB {
+	return db.conn
+}
+
 func (db *DocDB) Begin() {
 	db.txMutex.Lock()
 	db.conn.Exec("BEGIN")
