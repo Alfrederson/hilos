@@ -104,7 +104,15 @@ func (db *DocDB) Save(path string, object interface{}) error {
 		log.Println(err)
 		return errors.New("invalid object")
 	}
-	doc := Doc{
+
+	type DocUpdateStruct struct {
+		UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`
+
+		Path string `json:"path" gorm:"primaryKey"`
+		Data datatypes.JSON
+	}
+
+	doc := DocUpdateStruct{
 		UpdatedAt: time.Now(),
 		Path:      path,
 		Data:      bytes,
@@ -288,7 +296,7 @@ func (db *DocDB) Conn() *gorm.DB {
 
 func (db *DocDB) Begin() {
 	db.txMutex.Lock()
-	db.conn.Exec("BEGIN")
+	db.conn.Exec("BEGIN TRANSACTION")
 }
 
 func (db *DocDB) Commit() {
@@ -303,7 +311,7 @@ func (db *DocDB) Rollback() {
 
 // transforma uma array de JSONS em uma array de T.
 func RecordsToStructs[T any](records []string) []*T {
-	result := make([]*T, 0,len(records))
+	result := make([]*T, 0, len(records))
 	for _, v := range records {
 		var entry T
 		err := json.Unmarshal([]byte(v), &entry)
