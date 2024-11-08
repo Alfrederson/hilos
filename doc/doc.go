@@ -16,11 +16,14 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DOCDB_PATH string
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+const ALL = 0
 
 func CreateNewObject(obj interface{}) interface{} {
 	objType := reflect.TypeOf(obj)
@@ -29,7 +32,6 @@ func CreateNewObject(obj interface{}) interface{} {
 }
 
 func GenerateId(length int) string {
-	rand.Seed(time.Now().UnixNano())
 	randomBytes := make([]byte, length)
 	for i := 0; i < length; i++ {
 		randomBytes[i] = charset[rand.Intn(len(charset))]
@@ -95,7 +97,7 @@ func New(parts ...interface{}) string {
 	return result
 }
 
-// Salva um documento no caminho especificado. Acho que isso equivale a um upsert.
+// Salva um documento no caminho especificado. Isso equivale a um upsert.
 func (db *DocDB) Save(path string, object interface{}) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
@@ -105,19 +107,22 @@ func (db *DocDB) Save(path string, object interface{}) error {
 		return errors.New("invalid object")
 	}
 
-	type DocUpdateStruct struct {
-		UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`
+	// código comentado vai ficar aqui por razões históricas, mas ele está aqui porque
+	// o gorm estava sumindo com a coluna created_at
+	// doc := Doc{
+	// 	UpdatedAt: time.Now(),
+	// 	Path:      path,
+	// 	Data:      bytes,
+	// }
 
-		Path string `json:"path" gorm:"primaryKey"`
-		Data datatypes.JSON
-	}
-
-	doc := DocUpdateStruct{
-		UpdatedAt: time.Now(),
-		Path:      path,
-		Data:      bytes,
-	}
-	db.conn.Save(&doc)
+	now := time.Now()
+	db.conn.Exec(
+		"INSERT INTO docs(path,created_at,updated_at,data) VALUES (?,?,?,?) ON CONFLICT (path) DO UPDATE SET updated_at=excluded.updated_at, data=excluded.data",
+		path,
+		now,
+		now,
+		string(bytes),
+	)
 	return nil
 }
 
@@ -158,7 +163,7 @@ func (db *DocDB) Get(path string, object interface{}) error {
 		Path: path,
 	})
 	if result.Path == "" {
-		return errors.New("document no found: " + path)
+		return errors.New("document not found: " + path)
 	}
 	if object != nil {
 		json.Unmarshal(result.Data, object)
@@ -187,6 +192,19 @@ func (db *DocDB) GetLastUpdated(page int, perPage int) ([]string, error) {
 	return stuff, nil
 }
 
+// Pega os últimos perPage documentos da página page por ordem de criação
+func (db *DocDB) GetLastCreated(page int, perPage int) ([]string, error) {
+	var stuff = make([]string, 0, perPage)
+	db.conn.
+		Table("docs").
+		Select("data").
+		Offset(page * perPage).
+		Limit(perPage).
+		Order("docs.created_at DESC").
+		Find(&stuff)
+	return stuff, nil
+}
+
 type Condition struct {
 	Field string
 	Op    string
@@ -211,6 +229,17 @@ func (db *DocDB) CountWhere(conditions ...Condition) int64 {
 	return r
 }
 
+// lista os perPage ids a partir de page*perPage
+func (db *DocDB) List(page int, perPage int) ([]string, error) {
+	stuff := make([]string, 0)
+	tx := db.conn.Table("docs").Select("path")
+	if perPage != ALL {
+		tx = tx.Offset(perPage * page).Limit(perPage)
+	}
+	tx.Order("docs.created_at ASC").Find(&stuff)
+	return stuff, nil
+}
+
 // Retorna os caminhos (ids) dos documentos onde condição por ordem de criação.
 // page é o offset.
 // per page são quantos documentos retornar por página.
@@ -221,10 +250,62 @@ func (db *DocDB) ListWhere(page int, perPage int, conditions ...Condition) ([]st
 	for _, cond := range conditions {
 		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
 	}
-	if perPage > 0 {
+	if perPage != ALL {
 		tx = tx.Offset(perPage * page).Limit(perPage)
 	}
 	tx.Order("docs.created_at ASC").Find(&stuff)
+	return stuff, nil
+}
+
+// pega os primeiros perPage itens por ordem de criação.
+func (db *DocDB) FindFirstCreated(page int, perPage int, conditions ...Condition) ([]string, error) {
+	var stuff = make([]string, 0)
+	tx := db.conn.Table("docs").Select("data")
+	for _, cond := range conditions {
+		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
+	}
+	if perPage != ALL {
+		tx = tx.Offset(perPage * page).Limit(perPage)
+	}
+	tx.Order("docs.created_at ASC").Find(&stuff)
+	return stuff, nil
+}
+
+// pega os últimos perPage itens por ordem de criação.
+func (db *DocDB) FindLastCreated(page int, perPage int) ([]string, error) {
+	var stuff = make([]string, 0)
+	tx := db.conn.Table("docs").Select("data")
+	if perPage != ALL {
+		tx = tx.Offset(perPage * page).Limit(perPage)
+	}
+	tx.Order("docs.created_at DESC").Find(&stuff)
+	return stuff, nil
+}
+
+func (db *DocDB) FindFirstCreatedWhere(page int, perPage int, conditions ...Condition) ([]string, error) {
+	var stuff = make([]string, 0)
+	tx := db.conn.Table("docs").Select("data")
+	for _, cond := range conditions {
+		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
+	}
+	if perPage != ALL {
+		tx = tx.Offset(perPage * page).Limit(perPage)
+	}
+	tx.Order("docs.created_at ASC").Find(&stuff)
+	return stuff, nil
+}
+
+// manda os últimos perPage itens por ordem de criação.
+func (db *DocDB) FindLastCreatedWhere(page int, perPage int, conditions ...Condition) ([]string, error) {
+	var stuff = make([]string, 0)
+	tx := db.conn.Table("docs").Select("data")
+	for _, cond := range conditions {
+		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
+	}
+	if perPage != ALL {
+		tx = tx.Offset(perPage * page).Limit(perPage)
+	}
+	tx.Order("docs.created_at DESC").Find(&stuff)
 	return stuff, nil
 }
 
@@ -238,7 +319,7 @@ func (db *DocDB) FindLastUpdatedWhere(page int, perPage int, conditions ...Condi
 	for _, cond := range conditions {
 		tx = tx.Where("data->>'$."+cond.Field+"' "+cond.Op+" ?", cond.Value)
 	}
-	if perPage > 0 {
+	if perPage != ALL {
 		tx = tx.Offset(perPage * page).Limit(perPage)
 	}
 	tx.Order("docs.updated_at DESC").Find(&stuff)
@@ -254,17 +335,6 @@ func (db *DocDB) FindLastUpdated(page int, perPage int) ([]string, error) {
 		tx = tx.Offset(perPage * page).Limit(perPage)
 	}
 	tx.Order("docs.updated_at DESC").Find(&stuff)
-	return stuff, nil
-}
-
-// Pega o JSON dos últimos perPage documentos que atendam a um critério.
-func (db *DocDB) FindLast(field string, op string, value any, page int, perPage int) ([]string, error) {
-	var stuff = make([]string, 0, perPage)
-	tx := db.conn.Table("docs").Select("data").Where("data->>'$."+field+"' "+op+" ?", value)
-	if perPage > 0 {
-		tx = tx.Offset(page * perPage).Limit(perPage)
-	}
-	tx.Order("docs.created_at DESC").Find(&stuff)
 	return stuff, nil
 }
 
@@ -323,24 +393,31 @@ func RecordsToStructs[T any](records []string) []*T {
 	return result
 }
 
-func Begin(group ...*DocDB) {
-	for _, v := range group {
-		v.Begin()
+type tranny []*DocDB
+
+func (t tranny) Begin() {
+	for _, val := range t {
+		val.Begin()
 	}
 }
-func Commit(group ...*DocDB) {
-	for _, v := range group {
-		v.Commit()
+func (t tranny) Commit() {
+	for _, val := range t {
+		val.Commit()
 	}
 }
-func Rollback(group ...*DocDB) {
-	for _, v := range group {
-		v.Rollback()
+func (t tranny) Rollback() {
+	for _, val := range t {
+		val.Rollback()
 	}
 }
 
+// returns a tranny
+func Tranny(docs ...*DocDB) tranny {
+	return tranny(docs)
+}
+
 // Cria uma nova "instância" de uma coleção de um tipo específico.
-func Create(file string, indexable Indexable) *DocDB {
+func Create(file string, indexable Indexable, logLevel logger.LogLevel) *DocDB {
 	conn := sqlite.Open(DOCDB_PATH + file)
 
 	result := DocDB{
@@ -351,7 +428,7 @@ func Create(file string, indexable Indexable) *DocDB {
 	var err error
 
 	result.conn, err = gorm.Open(conn, &gorm.Config{
-		//Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logLevel),
 	})
 	// result.conn.Exec("PRAGMA journal_mode = WAL;")
 	if err != nil {

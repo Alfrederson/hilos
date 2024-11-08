@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Alfrederson/hilos/doc"
+	"gorm.io/gorm/logger"
 )
 
 const (
@@ -57,10 +58,13 @@ func Nuke() {
 	status.TotalPosts = 0
 }
 func Start() {
-	db.posts = doc.Create("posts.db", &Post{})
-	db.reports = doc.Create("reports.db", &Report{})
-	db.status = doc.Create("status.db", nil)
-	db.prunes = doc.Create("prunes.db", nil)
+	loglevel := logger.Silent
+
+	db.posts = doc.Create("posts.db", &Post{}, loglevel)
+	db.reports = doc.Create("reports.db", &Report{}, loglevel)
+	db.status = doc.Create("status.db", nil, loglevel)
+	db.prunes = doc.Create("prunes.db", nil, loglevel)
+
 	db.status.Get("lastPosts", &status.LastPosts)
 
 	status.PendingPrunes = int(db.prunes.Count())

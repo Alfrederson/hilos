@@ -39,7 +39,7 @@ func (p *Post) FromJSON(j string) error {
 }
 
 func ReadPostsByUser(userId string, page int64, perPage int64) ([]Post, error) {
-	lista, _ := db.posts.FindLast("creator_id", "=", userId, int(page), int(perPage))
+	lista, _ := db.posts.FindLastCreatedWhere(int(page), int(perPage), doc.Condition{Field: "creator_id", Op: "=", Value: userId})
 	posts := make([]Post, 0, TOPIC_PAGE_COUNT)
 	for _, data := range lista {
 		mensagem := Post{}
